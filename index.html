@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Absences — Synergie BTP</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3248;
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --text: #f0f2ff;
+    --text2: #8b90b0;
+    --text3: #565b7a;
+    --success: #22c55e;
+    --error: #ef4444;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    width: 38px; height: 38px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: white; letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .header-text h1 { font-size: 16px; font-weight: 600; line-height: 1.2; }
+  .header-text p { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .month-badge {
+    margin-left: auto;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Main */
+  .main { padding: 20px 16px 100px; max-width: 600px; margin: 0 auto; }
+
+  /* Section labels */
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin: 24px 0 10px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+
+  /* Salarié selector */
+  .field-label {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  select, input[type="text"], textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 12px 14px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.15s;
+  }
+  select:focus, input[type="text"]:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+  select option { background: #1a1d27; }
+
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text2);
+    pointer-events: none;
+    font-size: 13px;
+  }
+
+  /* Date row */
+  .date-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .date-field label {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: block;
+  }
+  input[type="date"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    padding: 11px 12px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.15s;
+    color-scheme: dark;
+  }
+  input[type="date"]:focus { border-color: var(--accent); }
+
+  /* Absence list */
+  #absence-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .absence-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .absence-item .name {
+    font-weight: 600;
+    font-size: 14px;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .absence-item .dates {
+    font-size: 12px;
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+  }
+  .absence-item .motif-tag {
+    font-size: 11px;
+    color: var(--accent2);
+    background: rgba(251,146,60,0.12);
+    border-radius: 4px;
+    padding: 2px 7px;
+    white-space: nowrap;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .btn-remove {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-remove:hover { color: var(--error); }
+
+  .empty-state {
+    text-align: center;
+    padding: 24px;
+    color: var(--text3);
+    font-size: 14px;
+  }
+  .empty-state .icon { font-size: 28px; margin-bottom: 8px; }
+
+  /* Add button */
+  .btn-add {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 14px;
+    cursor: pointer;
+    margin-top: 14px;
+    transition: background 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-add:active { transform: scale(0.98); background: var(--accent2); }
+
+  /* Bottom action bar */
+  .bottom-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 10px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .btn-send {
+    flex: 1;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 14px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-send:active { transform: scale(0.98); }
+  .btn-send:disabled { background: var(--surface2); color: var(--text3); cursor: not-allowed; }
+
+  .btn-preview {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    white-space: nowrap;
+  }
+  .btn-preview:hover { border-color: var(--accent); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 999;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    white-space: nowrap;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--success); }
+  .toast.error { border-color: var(--error); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    width: 100%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .pdf-preview {
+    background: white;
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    color: #1a1a2e;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .pdf-preview h3 { font-size: 16px; color: #1F4E79; border-bottom: 2px solid #f97316; padding-bottom: 8px; margin-bottom: 12px; }
+  .pdf-preview .meta { font-size: 12px; color: #666; margin-bottom: 16px; }
+  .pdf-preview table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .pdf-preview th { background: #1F4E79; color: white; padding: 8px 10px; text-align: left; }
+  .pdf-preview td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; }
+  .pdf-preview tr:nth-child(even) td { background: #f8f9fa; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn-modal { flex: 1; padding: 13px; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; border: none; }
+  .btn-modal.primary { background: var(--accent); color: white; }
+  .btn-modal.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<header class="header">
+  <div class="logo">SB</div>
+  <div class="header-text">
+    <h1>Synergie BTP</h1>
+    <p>Saisie des absences</p>
+  </div>
+  <div class="month-badge" id="month-badge"></div>
+</header>
+
+<main class="main">
+
+  <p class="section-title">Saisie</p>
+  <div class="card">
+    <label class="field-label">Salarié</label>
+    <div class="select-wrap">
+      <select id="salarie-select">
+        <option value="">— Choisir un salarié —</option>
+        <option>ANATOL Jérôme</option>
+        <option>ANATOL Wilson Tin</option>
+        <option>ANATOLE Elvise</option>
+        <option>ASSELIN Franck</option>
+        <option>BIANAY Moïse</option>
+        <option>ELIEN Celestin</option>
+        <option>AUGUSTE Ezechiel</option>
+        <option>FERGA Stracy</option>
+        <option>FERRAND Swann</option>
+        <option>JABES Jacob</option>
+        <option>JOSEPH Jonel</option>
+        <option>JUSTIN Jocelyn</option>
+        <option>KUSTHARDT Morganne</option>
+        <option>LAUJIN Rudy</option>
+        <option>LEWIS Roméo</option>
+        <option>LIGNIERES Alexandre</option>
+        <option>LIGNIERES Constantin</option>
+        <option>MADASAIB Jonathan</option>
+        <option>MARCEL Rémi</option>
+        <option>MICHEL Esner</option>
+        <option>NESTY James</option>
+        <option>PERRAN Mickaël</option>
+        <option>PERROT Jean Yves</option>
+        <option>PHIBEL Willy</option>
+        <option>SAINTE MARIE Ramon</option>
+        <option>VARELA ROMAN Nelson</option>
+        <option>ZOUGOULA Philippe</option>
+      </select>
+    </div>
+
+    <div class="date-row">
+      <div class="date-field">
+        <label>Du</label>
+        <input type="date" id="date-du">
+      </div>
+      <div class="date-field">
+        <label>Au</label>
+        <input type="date" id="date-au">
+      </div>
+    </div>
+
+    <div style="margin-top:12px">
+      <label class="field-label">Motif</label>
+      <input type="text" id="motif" placeholder="Ex: Maladie, Congés, AT…">
+    </div>
+
+    <button class="btn-add" onclick="addAbsence()">
+      <span style="font-size:18px">+</span> Ajouter l'absence
+    </button>
+  </div>
+
+  <p class="section-title">Récapitulatif (<span id="count">0</span>)</p>
+  <div class="card" id="absence-list-card">
+    <div id="absence-list">
+      <div class="empty-state">
+        <div class="icon">📋</div>
+        Aucune absence saisie
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="bottom-bar">
+  <button class="btn-preview" onclick="openPreview()">👁 Aperçu</button>
+  <button class="btn-send" id="btn-send" onclick="sendReport()" disabled>
+    <span>📨</span> Envoyer le PDF
+  </button>
+</div>
+
+<!-- Modal aperçu -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2>Aperçu du récapitulatif</h2>
+    <div class="pdf-preview" id="pdf-preview-content"></div>
+    <div class="modal-actions">
+      <button class="btn-modal secondary" onclick="document.getElementById('modal-overlay').classList.remove('open')">Fermer</button>
+      <button class="btn-modal primary" onclick="sendReport(); document.getElementById('modal-overlay').classList.remove('open')">📨 Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config EmailJS ──────────────────────────────────────────────
+// ÉTAPE 1 : Créer un compte sur emailjs.com
+// ÉTAPE 2 : Remplacer les 3 valeurs ci-dessous
+const EMAILJS_PUBLIC_KEY  = "VOTRE_PUBLIC_KEY";
+const EMAILJS_SERVICE_ID  = "VOTRE_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "VOTRE_TEMPLATE_ID";
+
+const DEST_EMAILS = ["synergiebtp971@gmail.com", "MK.synergiebtp@gmail.com"];
+
+// ── État ────────────────────────────────────────────────────────
+let absences = [];
+
+// ── Mois en cours ───────────────────────────────────────────────
+const now = new Date();
+const year = now.getFullYear();
+const month = now.getMonth(); // 0-indexed
+const monthNames = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+const monthLabel = monthNames[month] + " " + year;
+document.getElementById("month-badge").textContent = monthLabel;
+
+// Limiter les dates au mois en cours
+const minDate = new Date(year, month, 1).toISOString().split("T")[0];
+const maxDate = new Date(year, month + 1, 0).toISOString().split("T")[0];
+document.getElementById("date-du").min = minDate;
+document.getElementById("date-du").max = maxDate;
+document.getElementById("date-au").min = minDate;
+document.getElementById("date-au").max = maxDate;
+document.getElementById("date-du").value = minDate;
+document.getElementById("date-au").value = minDate;
+
+// Sync date-au >= date-du
+document.getElementById("date-du").addEventListener("change", function() {
+  const au = document.getElementById("date-au");
+  if (au.value < this.value) au.value = this.value;
+  au.min = this.value;
+});
+
+// ── Ajouter une absence ─────────────────────────────────────────
+function addAbsence() {
+  const salarie = document.getElementById("salarie-select").value;
+  const du = document.getElementById("date-du").value;
+  const au = document.getElementById("date-au").value;
+  const motif = document.getElementById("motif").value.trim();
+
+  if (!salarie) { showToast("⚠️ Sélectionner un salarié", "error"); return; }
+  if (!du || !au) { showToast("⚠️ Renseigner les dates", "error"); return; }
+  if (au < du) { showToast("⚠️ La date de fin est avant le début", "error"); return; }
+
+  absences.push({ salarie, du, au, motif: motif || "—" });
+  renderList();
+  document.getElementById("salarie-select").value = "";
+  document.getElementById("motif").value = "";
+  showToast("✓ Absence ajoutée", "success");
+}
+
+// ── Formater date ───────────────────────────────────────────────
+function fmt(d) {
+  const [y, m, j] = d.split("-");
+  return `${j}/${m}/${y}`;
+}
+
+// ── Afficher la liste ───────────────────────────────────────────
+function renderList() {
+  const list = document.getElementById("absence-list");
+  document.getElementById("count").textContent = absences.length;
+  document.getElementById("btn-send").disabled = absences.length === 0;
+
+  if (absences.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📋</div>Aucune absence saisie</div>`;
+    return;
+  }
+
+  list.innerHTML = absences.map((a, i) => `
+    <div class="absence-item">
+      <div class="name">${a.salarie}</div>
+      <div class="dates">${fmt(a.du)} → ${fmt(a.au)}</div>
+      <div class="motif-tag">${a.motif}</div>
+      <button class="btn-remove" onclick="removeAbsence(${i})">✕</button>
+    </div>
+  `).join("");
+}
+
+function removeAbsence(i) {
+  absences.splice(i, 1);
+  renderList();
+}
+
+// ── Générer HTML du PDF ─────────────────────────────────────────
+function buildPdfHtml() {
+  const today = new Date().toLocaleDateString("fr-FR", { day:"2-digit", month:"long", year:"numeric" });
+  const rows = absences.map(a => `
+    <tr>
+      <td>${a.salarie}</td>
+      <td style="text-align:center">${fmt(a.du)}</td>
+      <td style="text-align:center">${fmt(a.au)}</td>
+      <td>${a.motif}</td>
+    </tr>
+  `).join("");
+
+  return `
+    <h3>Absences — ${monthLabel}</h3>
+    <p class="meta">Généré le ${today} · ${absences.length} absence(s)</p>
+    <table>
+      <thead><tr><th>Salarié</th><th>Du</th><th>Au</th><th>Motif</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// ── Aperçu modal ────────────────────────────────────────────────
+function openPreview() {
+  if (absences.length === 0) { showToast("⚠️ Aucune absence à prévisualiser", "error"); return; }
+  document.getElementById("pdf-preview-content").innerHTML = buildPdfHtml();
+  document.getElementById("modal-overlay").classList.add("open");
+}
+function closeModal(e) {
+  if (e.target === document.getElementById("modal-overlay"))
+    document.getElementById("modal-overlay").classList.remove("open");
+}
+
+// ── Générer PDF ─────────────────────────────────────────────────
+async function generatePdfBase64() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const today = new Date().toLocaleDateString("fr-FR", { day:"2-digit", month:"long", year:"numeric" });
+
+  // En-tête
+  doc.setFillColor(31, 78, 121);
+  doc.rect(0, 0, 210, 28, "F");
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16); doc.setFont("helvetica","bold");
+  doc.text("SYNERGIE BTP", 14, 12);
+  doc.setFontSize(10); doc.setFont("helvetica","normal");
+  doc.text(`Récapitulatif des absences — ${monthLabel}`, 14, 20);
+  doc.setFontSize(9);
+  doc.text(`Édité le ${today}`, 196, 20, { align:"right" });
+
+  // Tableau
+  let y = 38;
+  doc.setFontSize(9); doc.setFont("helvetica","bold");
+  doc.setFillColor(249,115,22);
+  doc.rect(14, y, 182, 8, "F");
+  doc.setTextColor(255,255,255);
+  doc.text("SALARIÉ", 16, y+5.5);
+  doc.text("DU", 105, y+5.5);
+  doc.text("AU", 135, y+5.5);
+  doc.text("MOTIF", 165, y+5.5);
+  y += 8;
+
+  doc.setFont("helvetica","normal");
+  absences.forEach((a, i) => {
+    if (i % 2 === 0) {
+      doc.setFillColor(248,249,250);
+      doc.rect(14, y, 182, 8, "F");
+    }
+    doc.setTextColor(30,30,50);
+    doc.text(a.salarie.substring(0,28), 16, y+5.5);
+    doc.text(fmt(a.du), 105, y+5.5);
+    doc.text(fmt(a.au), 135, y+5.5);
+    doc.text((a.motif || "—").substring(0,18), 165, y+5.5);
+    y += 8;
+  });
+
+  // Bordure tableau
+  doc.setDrawColor(200,200,210);
+  doc.rect(14, 38, 182, y - 38, "S");
+
+  // Footer
+  doc.setFontSize(8); doc.setTextColor(150,150,170);
+  doc.text("Synergie BTP — Document confidentiel", 14, 287);
+  doc.text(`${absences.length} salarié(s) concerné(s)`, 196, 287, { align:"right" });
+
+  return doc.output("datauristring");
+}
+
+// ── Envoyer par email ────────────────────────────────────────────
+async function sendReport() {
+  if (absences.length === 0) { showToast("⚠️ Aucune absence à envoyer", "error"); return; }
+
+  if (EMAILJS_PUBLIC_KEY === "VOTRE_PUBLIC_KEY") {
+    showToast("⚙️ EmailJS non configuré — voir guide", "error");
+    showSetupGuide();
+    return;
+  }
+
+  document.getElementById("btn-send").disabled = true;
+  showToast("⏳ Envoi en cours…");
+
+  try {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    const pdfData = await generatePdfBase64();
+    const today = new Date().toLocaleDateString("fr-FR");
+
+    const lignes = absences.map(a =>
+      `• ${a.salarie} : du ${fmt(a.du)} au ${fmt(a.au)} (${a.motif})`
+    ).join("\n");
+
+    for (const email of DEST_EMAILS) {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: email,
+        subject: `Absences ${monthLabel} — Synergie BTP`,
+        month: monthLabel,
+        date_envoi: today,
+        nb_absences: absences.length,
+        liste_absences: lignes,
+        pdf_data: pdfData,
+      });
+    }
+
+    showToast("✅ PDF envoyé aux 2 adresses !", "success");
+    absences = [];
+    renderList();
+  } catch(e) {
+    console.error(e);
+    showToast("❌ Erreur d'envoi — vérifier la config", "error");
+  }
+
+  document.getElementById("btn-send").disabled = false;
+}
+
+// ── Guide de configuration ───────────────────────────────────────
+function showSetupGuide() {
+  const modal = document.getElementById("modal-overlay");
+  document.getElementById("pdf-preview-content").innerHTML = `
+    <div style="color:#1a1a2e; font-size:13px; line-height:1.7">
+      <h3 style="color:#1F4E79; border-bottom:2px solid #f97316; padding-bottom:8px; margin-bottom:12px">
+        ⚙️ Configuration EmailJS requise
+      </h3>
+      <p style="margin-bottom:10px"><strong>Étape 1</strong> — Créer un compte gratuit sur <strong>emailjs.com</strong></p>
+      <p style="margin-bottom:10px"><strong>Étape 2</strong> — Ajouter un service Gmail (connecter synergiebtp971@gmail.com)</p>
+      <p style="margin-bottom:10px"><strong>Étape 3</strong> — Créer un template email avec les variables :<br>
+        <code style="background:#f3f4f6;padding:2px 6px;border-radius:3px">{{subject}}</code>, 
+        <code style="background:#f3f4f6;padding:2px 6px;border-radius:3px">{{liste_absences}}</code>,
+        <code style="background:#f3f4f6;padding:2px 6px;border-radius:3px">{{month}}</code>
+      </p>
+      <p style="margin-bottom:10px"><strong>Étape 4</strong> — Remplacer dans le fichier HTML les 3 lignes :<br>
+        <code style="background:#f3f4f6;padding:2px 6px;border-radius:3px;display:block;margin-top:4px">VOTRE_PUBLIC_KEY → ta clé publique<br>VOTRE_SERVICE_ID → ton service ID<br>VOTRE_TEMPLATE_ID → ton template ID</code>
+      </p>
+      <p style="color:#666">→ Puis héberger le fichier sur <strong>GitHub Pages</strong> (repo public, branche main)</p>
+    </div>
+  `;
+  modal.classList.add("open");
+}
+
+// ── Toast ───────────────────────────────────────────────────────
+function showToast(msg, type = "") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.className = "toast", 3000);
+}
+
+// Init
+renderList();
+</script>
+</body>
+</html>

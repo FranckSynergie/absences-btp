@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Absences — Synergie BTP</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3248;
+    --accent: #f97316; --accent2: #fb923c; --text: #f0f2ff; --text2: #8b90b0;
+    --text3: #565b7a; --success: #22c55e; --error: #ef4444; --info: #3b82f6;
+    --radius: 12px; --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 16px 20px; display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    width: 38px; height: 38px; background: var(--accent); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: white; flex-shrink: 0;
+  }
+  .header-text h1 { font-size: 16px; font-weight: 600; }
+  .header-text p  { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .month-badge {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--accent);
+    font-weight: 500; font-family: 'DM Mono', monospace;
+  }
+  .sync-btn {
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text2); padding: 5px 10px; font-size: 13px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .sync-btn:active { border-color: var(--accent); color: var(--accent); }
+  .sync-btn.spinning { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .main { padding: 20px 16px 120px; max-width: 600px; margin: 0 auto; }
+
+  .section-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--text3); margin: 24px 0 10px;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
+  }
+  .field-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 6px; display: block; }
+
+  select, input[type="text"] {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 15px; padding: 12px 14px; outline: none; appearance: none; -webkit-appearance: none;
+    transition: border-color 0.15s;
+  }
+  select:focus, input[type="text"]:focus { border-color: var(--accent); }
+  select option { background: #1a1d27; }
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '▾'; position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%); color: var(--text2); pointer-events: none; font-size: 13px;
+  }
+  .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .date-field label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 6px; display: block; }
+  input[type="date"] {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text); font-family: 'DM Mono', monospace;
+    font-size: 14px; padding: 11px 12px; outline: none; appearance: none; -webkit-appearance: none;
+    transition: border-color 0.15s; color-scheme: dark;
+  }
+  input[type="date"]:focus { border-color: var(--accent); }
+
+  /* Config banner */
+  .config-banner {
+    background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.4);
+    border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px;
+    color: #fdba74; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 8px;
+  }
+  .config-banner a { color: var(--accent); text-decoration: underline; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .tab {
+    flex: 1; padding: 9px; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text2); transition: all 0.15s; text-align: center;
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .tab .badge {
+    display: inline-block; background: rgba(255,255,255,0.25); border-radius: 10px;
+    padding: 1px 7px; font-size: 11px; margin-left: 4px;
+  }
+  .tab:not(.active) .badge { background: var(--surface); color: var(--text3); }
+
+  /* Sync status */
+  .sync-status {
+    display: flex; align-items: center; gap: 6px; font-size: 12px;
+    color: var(--text3); margin-bottom: 10px;
+  }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+  .sync-dot.ok   { background: var(--success); }
+  .sync-dot.busy { background: var(--accent); animation: pulse 1s infinite; }
+  .sync-dot.err  { background: var(--error); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* List items */
+  #absence-list, #absence-list-prev { display: flex; flex-direction: column; gap: 8px; }
+  .absence-item {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px; animation: slideIn 0.2s ease;
+  }
+  .absence-item.prev-month { border-left: 3px solid var(--info); }
+  @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+  .absence-item .name { font-weight: 600; font-size: 14px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .absence-item .dates { font-size: 12px; color: var(--text2); font-family: 'DM Mono', monospace; white-space: nowrap; }
+  .absence-item .motif-tag {
+    font-size: 11px; color: var(--accent2); background: rgba(251,146,60,0.12);
+    border-radius: 4px; padding: 2px 7px; white-space: nowrap; max-width: 90px;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  .btn-remove {
+    background: none; border: none; color: var(--text3); cursor: pointer;
+    font-size: 16px; padding: 2px 4px; border-radius: 4px; transition: color 0.15s; flex-shrink: 0;
+  }
+  .btn-remove:hover { color: var(--error); }
+  .empty-state { text-align: center; padding: 28px; color: var(--text3); font-size: 14px; }
+  .empty-state .icon { font-size: 28px; margin-bottom: 8px; }
+
+  .readonly-notice {
+    display: flex; align-items: center; gap: 8px; background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.3); border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: 12px; color: #93c5fd; margin-bottom: 12px;
+  }
+
+  .btn-add {
+    width: 100%; background: var(--accent); border: none; border-radius: var(--radius-sm);
+    color: white; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 15px;
+    padding: 14px; cursor: pointer; margin-top: 14px; transition: background 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-add:active { transform: scale(0.98); }
+  .btn-add:disabled { background: var(--surface2); color: var(--text3); cursor: not-allowed; }
+
+  /* Bottom bar */
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    display: flex; gap: 8px; max-width: 600px; margin: 0 auto;
+  }
+  .btn-preview {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 500;
+    font-size: 14px; padding: 13px 14px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-send {
+    flex: 1; background: var(--accent); border: none; border-radius: var(--radius-sm);
+    color: white; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 15px;
+    padding: 13px; cursor: pointer; transition: background 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-send:active { transform: scale(0.98); }
+  .btn-send:disabled { background: var(--surface2); color: var(--text3); cursor: not-allowed; }
+
+  /* Toast */
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 20px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px;
+    z-index: 999; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--success); }
+  .toast.error   { border-color: var(--error); }
+  .toast.info    { border-color: var(--info); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 200; align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 20px 20px 0 0; border: 1px solid var(--border);
+    border-bottom: none; padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+
+  .pdf-preview { background: white; border-radius: var(--radius-sm); padding: 20px; color: #1a1a2e; font-family: 'DM Sans', sans-serif; }
+  .pdf-preview h3 { font-size: 14px; color: #1F4E79; border-bottom: 2px solid #f97316; padding-bottom: 6px; margin: 14px 0 8px; }
+  .pdf-preview h3:first-child { margin-top: 0; }
+  .pdf-preview .prev-title { color: #374151; border-bottom-color: #3b82f6; }
+  .pdf-preview .meta { font-size: 11px; color: #666; margin-bottom: 14px; }
+  .pdf-preview table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 8px; }
+  .pdf-preview th { background: #1F4E79; color: white; padding: 7px 8px; text-align: left; }
+  .pdf-preview td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+  .pdf-preview tr:nth-child(even) td { background: #f8f9fa; }
+
+  .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn-modal { flex: 1; padding: 13px; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; border: none; }
+  .btn-modal.primary   { background: var(--accent); color: white; }
+  .btn-modal.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+  /* Loader overlay */
+  .loader-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,17,23,0.7);
+    z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+  }
+  .loader-overlay.open { display: flex; }
+  .spinner {
+    width: 36px; height: 36px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  .loader-msg { font-size: 14px; color: var(--text2); }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="loader-overlay" id="loader">
+  <div class="spinner"></div>
+  <div class="loader-msg" id="loader-msg">Chargement…</div>
+</div>
+
+<header class="header">
+  <div class="logo">SB</div>
+  <div class="header-text">
+    <h1>Synergie BTP</h1>
+    <p>Saisie des absences</p>
+  </div>
+  <div class="header-right">
+    <button class="sync-btn" id="sync-btn" onclick="loadFromSheet()" title="Actualiser">↻</button>
+    <div class="month-badge" id="month-badge"></div>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- Banner config -->
+  <div class="config-banner" id="config-banner" style="display:none">
+    ⚙️ <span>Google Sheet non configuré. <a href="#" onclick="showSetupGuide()">Voir le guide de configuration</a></span>
+  </div>
+
+  <div id="saisie-block">
+    <p class="section-title">Nouvelle absence</p>
+    <div class="card">
+      <label class="field-label">Salarié</label>
+      <div class="select-wrap">
+        <select id="salarie-select">
+          <option value="">— Choisir un salarié —</option>
+          <option>ANATOL Jérôme</option>
+          <option>ANATOL Wilson Tin</option>
+          <option>ANATOLE Elvise</option>
+          <option>ASSELIN Franck</option>
+          <option>BIANAY Moïse</option>
+          <option>ELIEN Celestin</option>
+          <option>Auguste Ezechiel</option>
+          <option>FERGA Stracy</option>
+          <option>FERRAND Swann</option>
+          <option>JABES Jacob</option>
+          <option>JOSEPH Jonel</option>
+          <option>JUSTIN Jocelyn</option>
+          <option>KUSTHARDT Morganne</option>
+          <option>LAUJIN Rudy</option>
+          <option>LEWIS Roméo</option>
+          <option>LIGNIERES Alexandre</option>
+          <option>LIGNIERES Constantin</option>
+          <option>MADASAIB Jonathan</option>
+          <option>MARCEL Rémi</option>
+          <option>MICHEL Esner</option>
+          <option>NESTY James</option>
+          <option>PERRAN Mickaël</option>
+          <option>PERROT Jean Yves</option>
+          <option>PHIBEL Willy</option>
+          <option>SAINTE MARIE Ramon</option>
+          <option>VARELA ROMAN Nelson</option>
+          <option>ZOUGOULA Philippe</option>
+        </select>
+      </div>
+      <div class="date-row">
+        <div class="date-field">
+          <label>Du</label>
+          <input type="date" id="date-du">
+        </div>
+        <div class="date-field">
+          <label>Au</label>
+          <input type="date" id="date-au">
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <label class="field-label">Motif</label>
+        <input type="text" id="motif" placeholder="Ex: Maladie, Congés, AT…">
+      </div>
+      <button class="btn-add" id="btn-add" onclick="addAbsence()">
+        <span style="font-size:18px">+</span> Enregistrer l'absence
+      </button>
+    </div>
+  </div>
+
+  <p class="section-title">Récapitulatif</p>
+
+  <div class="tabs">
+    <div class="tab active" id="tab-m"    onclick="switchTab('m')">
+      <span id="tab-m-label">—</span><span class="badge" id="badge-m">0</span>
+    </div>
+    <div class="tab" id="tab-prev" onclick="switchTab('prev')">
+      <span id="tab-prev-label">—</span><span class="badge" id="badge-prev">0</span>
+    </div>
+  </div>
+
+  <div id="panel-m">
+    <div class="sync-status">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">—</span>
+    </div>
+    <div class="card">
+      <div id="absence-list">
+        <div class="empty-state"><div class="icon">📋</div>Chargement…</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-prev" style="display:none">
+    <div class="readonly-notice">ℹ️ Données du mois précédent — lecture seule</div>
+    <div class="card">
+      <div id="absence-list-prev">
+        <div class="empty-state"><div class="icon">📋</div>Chargement…</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="bottom-bar">
+  <button class="btn-preview" onclick="openPreview()">👁 Aperçu</button>
+  <button class="btn-send" id="btn-send" onclick="sendReport()" disabled>📨 Envoyer le récap</button>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="modal-title">Aperçu</h2>
+    <div id="pdf-preview-content"></div>
+    <div class="modal-actions">
+      <button class="btn-modal secondary" onclick="document.getElementById('modal-overlay').classList.remove('open')">Fermer</button>
+      <button class="btn-modal primary" onclick="sendReport(); document.getElementById('modal-overlay').classList.remove('open')">📨 Envoyer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  CONFIG — À remplir après avoir créé le Apps Script
+// ════════════════════════════════════════════════════════
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwC_P389igdawx1e8HA4ZZZYIsc6iHdap2vaDqM4F0NQZ73z88l0NC67X2ftZ038R7Z/exec";  // ← coller ici l'URL du script déployé
+
+const EMAILJS_PUBLIC_KEY  = "9cpxDjEG1jXr_0dcv";
+const EMAILJS_SERVICE_ID  = "service_synergiebtp971@gmail.com";
+const EMAILJS_TEMPLATE_ID = "template_lky1ji7";
+const DEST_EMAILS = ["synergiebtp971@gmail.com", "MK.synergiebtp@gmail.com"];
+
+// ════════════════════════════════════════════════════════
+//  DATES
+// ════════════════════════════════════════════════════════
+const now    = new Date();
+const YEAR   = now.getFullYear();
+const MONTH  = now.getMonth();
+const MONTHS_FR = ["Janvier","Février","Mars","Avril","Mai","Juin",
+                   "Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+
+const monthLabel = MONTHS_FR[MONTH] + " " + YEAR;
+const prevDate   = new Date(YEAR, MONTH - 1, 1);
+const prevLabel  = MONTHS_FR[prevDate.getMonth()] + " " + prevDate.getFullYear();
+
+// Clés mois pour filtrage
+const keyM    = `${YEAR}-${String(MONTH+1).padStart(2,'0')}`;
+const keyPrev = `${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}`;
+
+document.getElementById("month-badge").textContent    = monthLabel;
+document.getElementById("tab-m-label").textContent    = monthLabel;
+document.getElementById("tab-prev-label").textContent = prevLabel;
+
+// Bornes dates
+const minDate = new Date(YEAR, MONTH, 1).toISOString().split("T")[0];
+const maxDate = new Date(YEAR, MONTH+1, 0).toISOString().split("T")[0];
+const duEl = document.getElementById("date-du");
+const auEl = document.getElementById("date-au");
+duEl.min = auEl.min = minDate;
+duEl.max = auEl.max = maxDate;
+duEl.value = auEl.value = minDate;
+duEl.addEventListener("change", function() {
+  if (auEl.value < this.value) auEl.value = this.value;
+  auEl.min = this.value;
+});
+
+// ════════════════════════════════════════════════════════
+//  ÉTAT
+// ════════════════════════════════════════════════════════
+let absences     = [];
+let absencesPrev = [];
+let configured   = false;
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+window.addEventListener("load", () => {
+  if (SCRIPT_URL === "AKfycbwC_P389igdawx1e8HA4ZZZYIsc6iHdap2vaDqM4F0NQZ73z88l0NC67X2ftZ038R7Z") {
+    document.getElementById("config-banner").style.display = "flex";
+    setSyncStatus("err", "Google Sheet non connecté");
+    renderList();
+  } else {
+    configured = true;
+    loadFromSheet();
+  }
+});
+
+// ════════════════════════════════════════════════════════
+//  LECTURE Google Sheet
+// ════════════════════════════════════════════════════════
+async function loadFromSheet() {
+  if (!configured) return;
+  setSyncStatus("busy", "Synchronisation…");
+  const btn = document.getElementById("sync-btn");
+  btn.classList.add("spinning");
+
+  try {
+    const res  = await fetch(`${SCRIPT_URL}?action=get`);
+    const data = await res.json();
+
+    absences     = data.filter(r => r.mois === keyM);
+    absencesPrev = data.filter(r => r.mois === keyPrev);
+
+    const t = new Date();
+    setSyncStatus("ok", `Mis à jour à ${t.getHours()}h${String(t.getMinutes()).padStart(2,'0')}`);
+    renderList();
+  } catch(e) {
+    setSyncStatus("err", "Erreur de connexion");
+    showToast("❌ Impossible de charger les données", "error");
+  }
+  btn.classList.remove("spinning");
+}
+
+// ════════════════════════════════════════════════════════
+//  ÉCRITURE Google Sheet
+// ════════════════════════════════════════════════════════
+async function writeToSheet(absence) {
+  const res = await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "add", data: absence }),
+  });
+  return res.json();
+}
+
+async function deleteFromSheet(id) {
+  const res = await fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ action: "delete", id }),
+  });
+  return res.json();
+}
+
+// ════════════════════════════════════════════════════════
+//  AJOUTER UNE ABSENCE
+// ════════════════════════════════════════════════════════
+async function addAbsence() {
+  const salarie = document.getElementById("salarie-select").value;
+  const du      = duEl.value;
+  const au      = auEl.value;
+  const motif   = document.getElementById("motif").value.trim();
+
+  if (!salarie) { showToast("⚠️ Sélectionner un salarié", "error"); return; }
+  if (!du || !au) { showToast("⚠️ Renseigner les dates", "error"); return; }
+  if (au < du)   { showToast("⚠️ Date de fin avant le début", "error"); return; }
+
+  if (!configured) {
+    showToast("⚙️ Configurer Google Sheet d'abord", "error"); return;
+  }
+
+  const btn = document.getElementById("btn-add");
+  btn.disabled = true;
+  showLoader("Enregistrement…");
+
+  const absence = {
+    id:      Date.now().toString(),
+    mois:    keyM,
+    salarie,
+    du,
+    au,
+    motif:   motif || "—",
+    saisi_le: new Date().toLocaleDateString("fr-FR"),
+  };
+
+  try {
+    await writeToSheet(absence);
+    absences.push(absence);
+    renderList();
+    document.getElementById("salarie-select").value = "";
+    document.getElementById("motif").value = "";
+    showToast("✅ Absence enregistrée !", "success");
+    setSyncStatus("ok", `Sauvegardé à ${new Date().getHours()}h${String(new Date().getMinutes()).padStart(2,'0')}`);
+  } catch(e) {
+    showToast("❌ Erreur d'enregistrement", "error");
+  }
+
+  hideLoader();
+  btn.disabled = false;
+}
+
+// ════════════════════════════════════════════════════════
+//  SUPPRIMER UNE ABSENCE
+// ════════════════════════════════════════════════════════
+async function removeAbsence(id) {
+  if (!configured) return;
+  showLoader("Suppression…");
+  try {
+    await deleteFromSheet(id);
+    absences = absences.filter(a => a.id !== id);
+    renderList();
+    showToast("🗑 Absence supprimée", "info");
+  } catch(e) {
+    showToast("❌ Erreur de suppression", "error");
+  }
+  hideLoader();
+}
+
+// ════════════════════════════════════════════════════════
+//  ONGLETS
+// ════════════════════════════════════════════════════════
+function switchTab(tab) {
+  document.getElementById("tab-m").classList.toggle("active", tab === 'm');
+  document.getElementById("tab-prev").classList.toggle("active", tab === 'prev');
+  document.getElementById("panel-m").style.display      = tab === 'm'    ? '' : 'none';
+  document.getElementById("panel-prev").style.display   = tab === 'prev' ? '' : 'none';
+  document.getElementById("saisie-block").style.display = tab === 'm'    ? '' : 'none';
+}
+
+// ════════════════════════════════════════════════════════
+//  RENDU LISTES
+// ════════════════════════════════════════════════════════
+function fmt(d) {
+  if (!d) return "—";
+  const [y, m, j] = d.split("-");
+  return `${j}/${m}/${y}`;
+}
+
+function renderList() {
+  document.getElementById("badge-m").textContent    = absences.length;
+  document.getElementById("badge-prev").textContent = absencesPrev.length;
+  const total = absences.length + absencesPrev.length;
+  document.getElementById("btn-send").disabled = total === 0;
+
+  const el = document.getElementById("absence-list");
+  el.innerHTML = absences.length === 0
+    ? `<div class="empty-state"><div class="icon">📋</div>Aucune absence ce mois-ci</div>`
+    : absences.map(a => `
+        <div class="absence-item">
+          <div class="name">${a.salarie}</div>
+          <div class="dates">${fmt(a.du)} → ${fmt(a.au)}</div>
+          <div class="motif-tag">${a.motif}</div>
+          <button class="btn-remove" onclick="removeAbsence('${a.id}')">✕</button>
+        </div>`).join("");
+
+  const elP = document.getElementById("absence-list-prev");
+  elP.innerHTML = absencesPrev.length === 0
+    ? `<div class="empty-state"><div class="icon">📋</div>Aucune absence enregistrée</div>`
+    : absencesPrev.map(a => `
+        <div class="absence-item prev-month">
+          <div class="name">${a.salarie}</div>
+          <div class="dates">${fmt(a.du)} → ${fmt(a.au)}</div>
+          <div class="motif-tag">${a.motif}</div>
+        </div>`).join("");
+}
+
+// ════════════════════════════════════════════════════════
+//  APERÇU & ENVOI
+// ════════════════════════════════════════════════════════
+function buildTable(list) {
+  if (!list.length) return `<p style="color:#9ca3af;font-size:12px;margin-bottom:8px">Aucune absence</p>`;
+  return `<table>
+    <thead><tr><th>Salarié</th><th>Du</th><th>Au</th><th>Motif</th></tr></thead>
+    <tbody>${list.map(a=>`<tr>
+      <td>${a.salarie}</td>
+      <td style="text-align:center">${fmt(a.du)}</td>
+      <td style="text-align:center">${fmt(a.au)}</td>
+      <td>${a.motif}</td></tr>`).join("")}
+    </tbody></table>`;
+}
+
+function openPreview() {
+  if (!absences.length && !absencesPrev.length) {
+    showToast("⚠️ Aucune absence à prévisualiser", "error"); return;
+  }
+  const today = new Date().toLocaleDateString("fr-FR", {day:"2-digit",month:"long",year:"numeric"});
+  document.getElementById("pdf-preview-content").innerHTML = `
+    <div class="pdf-preview">
+      <p class="meta">Généré le ${today} · M : ${absences.length} abs. · M-1 : ${absencesPrev.length} abs.</p>
+      <h3>${monthLabel} — ${absences.length} absence(s)</h3>${buildTable(absences)}
+      <h3 class="prev-title">${prevLabel} — ${absencesPrev.length} absence(s)</h3>${buildTable(absencesPrev)}
+    </div>`;
+  document.getElementById("modal-title").textContent = monthLabel + " & " + prevLabel;
+  document.getElementById("modal-overlay").classList.add("open");
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById("modal-overlay"))
+    document.getElementById("modal-overlay").classList.remove("open");
+}
+
+async function sendReport() {
+  if (!absences.length && !absencesPrev.length) {
+    showToast("⚠️ Aucune absence à envoyer", "error"); return;
+  }
+  if (EMAILJS_PUBLIC_KEY === "VOTRE_PUBLIC_KEY") {
+    showToast("⚙️ EmailJS non configuré", "error"); return;
+  }
+  document.getElementById("btn-send").disabled = true;
+  showLoader("Envoi en cours…");
+
+  const buildListe = (list, label) => {
+    if (!list.length) return `${label} : aucune absence\n`;
+    return `${label} (${list.length}) :\n` +
+      list.map(a=>`  • ${a.salarie} : du ${fmt(a.du)} au ${fmt(a.au)} — ${a.motif}`).join("\n") + "\n";
+  };
+
+  try {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+    const today = new Date().toLocaleDateString("fr-FR");
+    for (const email of DEST_EMAILS) {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email:       email,
+        subject:        `Absences ${monthLabel} & ${prevLabel} — Synergie BTP`,
+        month:          `${monthLabel} & ${prevLabel}`,
+        date_envoi:     today,
+        nb_absences:    `${absences.length} (M) + ${absencesPrev.length} (M-1)`,
+        liste_absences: buildListe(absences, monthLabel) + "\n" + buildListe(absencesPrev, prevLabel),
+      });
+    }
+    showToast("✅ Récap envoyé aux 2 adresses !", "success");
+  } catch(e) {
+    showToast("❌ Erreur d'envoi", "error");
+  }
+  hideLoader();
+  document.getElementById("btn-send").disabled = false;
+}
+
+// ════════════════════════════════════════════════════════
+//  GUIDE DE CONFIG
+// ════════════════════════════════════════════════════════
+function showSetupGuide() {
+  document.getElementById("pdf-preview-content").innerHTML = `
+    <div style="color:#1a1a2e;font-size:13px;line-height:1.8">
+      <h3 style="color:#1F4E79;border-bottom:2px solid #f97316;padding-bottom:8px;margin-bottom:12px">
+        ⚙️ Connexion Google Sheets
+      </h3>
+      <p><strong>1.</strong> Va sur <strong>script.google.com</strong></p>
+      <p><strong>2.</strong> Crée un nouveau projet, colle le code Apps Script fourni</p>
+      <p><strong>3.</strong> Déploie → "Nouvelle version" → "Tout le monde" → copie l'URL</p>
+      <p><strong>4.</strong> Dans index.html, remplace :<br>
+        <code style="background:#f3f4f6;padding:2px 6px;border-radius:3px;font-size:11px">
+          VOTRE_APPS_SCRIPT_URL → l'URL copiée
+        </code>
+      </p>
+    </div>`;
+  document.getElementById("modal-title").textContent = "Configuration";
+  document.getElementById("modal-overlay").classList.add("open");
+}
+
+// ════════════════════════════════════════════════════════
+//  HELPERS UI
+// ════════════════════════════════════════════════════════
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById("sync-dot");
+  dot.className = "sync-dot " + state;
+  document.getElementById("sync-label").textContent = msg;
+}
+function showLoader(msg) {
+  document.getElementById("loader-msg").textContent = msg;
+  document.getElementById("loader").classList.add("open");
+}
+function hideLoader() {
+  document.getElementById("loader").classList.remove("open");
+}
+function showToast(msg, type = "") {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "toast show " + type;
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.className = "toast", 3200);
+}
+</script>
+</body>
+</html>

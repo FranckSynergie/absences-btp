@@ -421,7 +421,7 @@ let configured   = false;
 //  INIT
 // ════════════════════════════════════════════════════════
 window.addEventListener("load", () => {
-  if (SCRIPT_URL === "AKfycbwC_P389igdawx1e8HA4ZZZYIsc6iHdap2vaDqM4F0NQZ73z88l0NC67X2ftZ038R7Z") {
+  if (SCRIPT_URL === "VOTRE_APPS_SCRIPT_URL" || !SCRIPT_URL.startsWith("https://")) {
     document.getElementById("config-banner").style.display = "flex";
     setSyncStatus("err", "Google Sheet non connecté");
     renderList();
@@ -627,8 +627,8 @@ async function sendReport() {
   if (!absences.length && !absencesPrev.length) {
     showToast("⚠️ Aucune absence à envoyer", "error"); return;
   }
-  if (EMAILJS_PUBLIC_KEY === "VOTRE_PUBLIC_KEY") {
-    showToast("⚙️ EmailJS non configuré", "error"); return;
+  if (EMAILJS_PUBLIC_KEY === "VOTRE_PUBLIC_KEY" || EMAILJS_SERVICE_ID.includes("@") || EMAILJS_SERVICE_ID === "VOTRE_SERVICE_ID") {
+    showToast("⚙️ EmailJS : Service ID incorrect (voir guide)", "error"); return;
   }
   document.getElementById("btn-send").disabled = true;
   showLoader("Envoi en cours…");

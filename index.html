@@ -640,7 +640,6 @@ async function sendReport() {
   };
 
   try {
-    emailjs.init(EMAILJS_PUBLIC_KEY);
     const today = new Date().toLocaleDateString("fr-FR");
     for (const email of DEST_EMAILS) {
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
@@ -650,7 +649,7 @@ async function sendReport() {
         date_envoi:     today,
         nb_absences:    `${absences.length} (M) + ${absencesPrev.length} (M-1)`,
         liste_absences: buildListe(absences, monthLabel) + "\n" + buildListe(absencesPrev, prevLabel),
-      });
+      }, EMAILJS_PUBLIC_KEY);
     }
     showToast("✅ Récap envoyé aux 2 adresses !", "success");
   } catch(e) {

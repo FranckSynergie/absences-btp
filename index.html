@@ -9,230 +9,167 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root {
-    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3248;
-    --accent: #f97316; --accent2: #fb923c; --text: #f0f2ff; --text2: #8b90b0;
-    --text3: #565b7a; --success: #22c55e; --error: #ef4444; --info: #3b82f6;
-    --radius: 12px; --radius-sm: 8px;
+    --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3248;
+    --accent:#f97316;--accent2:#fb923c;--text:#f0f2ff;--text2:#8b90b0;
+    --text3:#565b7a;--success:#22c55e;--error:#ef4444;--info:#3b82f6;
+    --warn:#eab308;--radius:12px;--radius-sm:8px;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
-  .header {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    padding: 16px 20px; display: flex; align-items: center; gap: 12px;
-    position: sticky; top: 0; z-index: 100;
-  }
-  .logo {
-    width: 38px; height: 38px; background: var(--accent); border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 14px; color: white; flex-shrink: 0;
-  }
-  .header-text h1 { font-size: 16px; font-weight: 600; }
-  .header-text p  { font-size: 12px; color: var(--text2); margin-top: 1px; }
-  .header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-  .month-badge {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--accent);
-    font-weight: 500; font-family: 'DM Mono', monospace;
-  }
-  .sync-btn {
-    background: none; border: 1px solid var(--border); border-radius: 8px;
-    color: var(--text2); padding: 5px 10px; font-size: 13px; cursor: pointer;
-    transition: all 0.15s;
-  }
-  .sync-btn:active { border-color: var(--accent); color: var(--accent); }
-  .sync-btn.spinning { animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;
+    display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;}
+  .logo{width:38px;height:38px;background:var(--accent);border-radius:10px;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:white;flex-shrink:0;}
+  .header-text h1{font-size:16px;font-weight:600;}
+  .header-text p{font-size:12px;color:var(--text2);margin-top:1px;}
+  .header-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+  .month-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;
+    padding:4px 12px;font-size:12px;color:var(--accent);font-weight:500;font-family:'DM Mono',monospace;}
+  .sync-btn{background:none;border:1px solid var(--border);border-radius:8px;
+    color:var(--text2);padding:5px 10px;font-size:13px;cursor:pointer;transition:all 0.15s;}
+  .sync-btn:active{border-color:var(--accent);color:var(--accent);}
+  .sync-btn.spinning{animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
 
-  .main { padding: 20px 16px 120px; max-width: 600px; margin: 0 auto; }
+  .main{padding:20px 16px 120px;max-width:600px;margin:0 auto;}
 
-  .section-title {
-    font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
-    text-transform: uppercase; color: var(--text3); margin: 24px 0 10px;
-  }
-  .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 16px; margin-bottom: 12px;
-  }
-  .field-label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 6px; display: block; }
+  .section-title{font-size:11px;font-weight:600;letter-spacing:1.2px;
+    text-transform:uppercase;color:var(--text3);margin:24px 0 10px;}
+  .card{background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+  .field-label{font-size:12px;color:var(--text2);font-weight:500;margin-bottom:6px;display:block;}
 
-  select, input[type="text"] {
-    width: 100%; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); color: var(--text); font-family: 'DM Sans', sans-serif;
-    font-size: 15px; padding: 12px 14px; outline: none; appearance: none; -webkit-appearance: none;
-    transition: border-color 0.15s;
-  }
-  select:focus, input[type="text"]:focus { border-color: var(--accent); }
-  select option { background: #1a1d27; }
-  .select-wrap { position: relative; }
-  .select-wrap::after {
-    content: '▾'; position: absolute; right: 14px; top: 50%;
-    transform: translateY(-50%); color: var(--text2); pointer-events: none; font-size: 13px;
-  }
-  .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-  .date-field label { font-size: 12px; color: var(--text2); font-weight: 500; margin-bottom: 6px; display: block; }
-  input[type="date"] {
-    width: 100%; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); color: var(--text); font-family: 'DM Mono', monospace;
-    font-size: 14px; padding: 11px 12px; outline: none; appearance: none; -webkit-appearance: none;
-    transition: border-color 0.15s; color-scheme: dark;
-  }
-  input[type="date"]:focus { border-color: var(--accent); }
+  select,input[type="text"]{width:100%;background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
+    font-size:15px;padding:12px 14px;outline:none;appearance:none;-webkit-appearance:none;
+    transition:border-color 0.15s;}
+  select:focus,input[type="text"]:focus{border-color:var(--accent);}
+  select option{background:#1a1d27;}
+  .select-wrap{position:relative;}
+  .select-wrap::after{content:'▾';position:absolute;right:14px;top:50%;
+    transform:translateY(-50%);color:var(--text2);pointer-events:none;font-size:13px;}
+  .date-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+  .date-field label{font-size:12px;color:var(--text2);font-weight:500;margin-bottom:6px;display:block;}
+  input[type="date"]{width:100%;background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text);font-family:'DM Mono',monospace;
+    font-size:14px;padding:11px 12px;outline:none;appearance:none;-webkit-appearance:none;
+    transition:border-color 0.15s;color-scheme:dark;}
+  input[type="date"]:focus{border-color:var(--accent);}
 
-  /* Config banner */
-  .config-banner {
-    background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.4);
-    border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px;
-    color: #fdba74; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 8px;
-  }
-  .config-banner a { color: var(--accent); text-decoration: underline; }
+  .config-banner{background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.4);
+    border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:#fdba74;
+    margin-bottom:16px;display:flex;align-items:flex-start;gap:8px;}
+  .config-banner a{color:var(--accent);text-decoration:underline;}
 
-  /* Tabs */
-  .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
-  .tab {
-    flex: 1; padding: 9px; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
-    font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border);
-    background: var(--surface2); color: var(--text2); transition: all 0.15s; text-align: center;
-  }
-  .tab.active { background: var(--accent); border-color: var(--accent); color: white; }
-  .tab .badge {
-    display: inline-block; background: rgba(255,255,255,0.25); border-radius: 10px;
-    padding: 1px 7px; font-size: 11px; margin-left: 4px;
-  }
-  .tab:not(.active) .badge { background: var(--surface); color: var(--text3); }
+  /* Tabs — 3 onglets */
+  .tabs{display:flex;gap:5px;margin-bottom:12px;}
+  .tab{flex:1;padding:8px 4px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;
+    font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);
+    background:var(--surface2);color:var(--text2);transition:all 0.15s;text-align:center;}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:white;}
+  .tab .badge{display:inline-block;background:rgba(255,255,255,0.25);border-radius:10px;
+    padding:1px 6px;font-size:10px;margin-left:3px;}
+  .tab:not(.active) .badge{background:var(--surface);color:var(--text3);}
 
-  /* Sync status */
-  .sync-status {
-    display: flex; align-items: center; gap: 6px; font-size: 12px;
-    color: var(--text3); margin-bottom: 10px;
-  }
-  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
-  .sync-dot.ok   { background: var(--success); }
-  .sync-dot.busy { background: var(--accent); animation: pulse 1s infinite; }
-  .sync-dot.err  { background: var(--error); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .sync-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);margin-bottom:10px;}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;}
+  .sync-dot.ok{background:var(--success);}
+  .sync-dot.busy{background:var(--accent);animation:pulse 1s infinite;}
+  .sync-dot.err{background:var(--error);}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
-  /* List items */
-  #absence-list, #absence-list-prev { display: flex; flex-direction: column; gap: 8px; }
-  .absence-item {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 12px 14px;
-    display: flex; align-items: center; gap: 10px; animation: slideIn 0.2s ease;
-  }
-  .absence-item.prev-month { border-left: 3px solid var(--info); }
-  @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
-  .absence-item .name { font-weight: 600; font-size: 14px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .absence-item .dates { font-size: 12px; color: var(--text2); font-family: 'DM Mono', monospace; white-space: nowrap; }
-  .absence-item .motif-tag {
-    font-size: 11px; color: var(--accent2); background: rgba(251,146,60,0.12);
-    border-radius: 4px; padding: 2px 7px; white-space: nowrap; max-width: 90px;
-    overflow: hidden; text-overflow: ellipsis;
-  }
-  .btn-remove {
-    background: none; border: none; color: var(--text3); cursor: pointer;
-    font-size: 16px; padding: 2px 4px; border-radius: 4px; transition: color 0.15s; flex-shrink: 0;
-  }
-  .btn-remove:hover { color: var(--error); }
-  .empty-state { text-align: center; padding: 28px; color: var(--text3); font-size: 14px; }
-  .empty-state .icon { font-size: 28px; margin-bottom: 8px; }
+  #absence-list,#absence-list-prev,#absence-list-prev2{display:flex;flex-direction:column;gap:8px;}
+  .absence-item{background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:12px 14px;
+    display:flex;align-items:center;gap:10px;animation:slideIn 0.2s ease;}
+  .absence-item.prev-month{border-left:3px solid var(--info);}
+  .absence-item.prev2-month{border-left:3px solid var(--warn);}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .absence-item .name{font-weight:600;font-size:14px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .absence-item .dates{font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;white-space:nowrap;}
+  .absence-item .motif-tag{font-size:11px;color:var(--accent2);background:rgba(251,146,60,0.12);
+    border-radius:4px;padding:2px 7px;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis;}
+  .btn-remove{background:none;border:none;color:var(--text3);cursor:pointer;
+    font-size:16px;padding:2px 4px;border-radius:4px;transition:color 0.15s;flex-shrink:0;}
+  .btn-remove:hover{color:var(--error);}
+  .empty-state{text-align:center;padding:28px;color:var(--text3);font-size:14px;}
+  .empty-state .icon{font-size:28px;margin-bottom:8px;}
 
-  .readonly-notice {
-    display: flex; align-items: center; gap: 8px; background: rgba(59,130,246,0.1);
-    border: 1px solid rgba(59,130,246,0.3); border-radius: var(--radius-sm);
-    padding: 10px 14px; font-size: 12px; color: #93c5fd; margin-bottom: 12px;
-  }
+  .readonly-notice{display:flex;align-items:center;gap:8px;
+    border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;margin-bottom:12px;}
+  .readonly-notice.blue{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;}
+  .readonly-notice.yellow{background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);color:#fde047;}
 
-  .btn-add {
-    width: 100%; background: var(--accent); border: none; border-radius: var(--radius-sm);
-    color: white; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 15px;
-    padding: 14px; cursor: pointer; margin-top: 14px; transition: background 0.15s, transform 0.1s;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-  }
-  .btn-add:active { transform: scale(0.98); }
-  .btn-add:disabled { background: var(--surface2); color: var(--text3); cursor: not-allowed; }
+  .btn-add{width:100%;background:var(--accent);border:none;border-radius:var(--radius-sm);
+    color:white;font-family:'DM Sans',sans-serif;font-weight:600;font-size:15px;
+    padding:14px;cursor:pointer;margin-top:14px;transition:background 0.15s,transform 0.1s;
+    display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn-add:active{transform:scale(0.98);}
+  .btn-add:disabled{background:var(--surface2);color:var(--text3);cursor:not-allowed;}
 
-  /* Bottom bar */
-  .bottom-bar {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    background: var(--surface); border-top: 1px solid var(--border);
-    padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom));
-    display: flex; gap: 8px; max-width: 600px; margin: 0 auto;
-  }
-  .btn-preview {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
-    color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 500;
-    font-size: 14px; padding: 13px 14px; cursor: pointer; white-space: nowrap;
-  }
-  .btn-send {
-    flex: 1; background: var(--accent); border: none; border-radius: var(--radius-sm);
-    color: white; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 15px;
-    padding: 13px; cursor: pointer; transition: background 0.15s, transform 0.1s;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-  }
-  .btn-send:active { transform: scale(0.98); }
-  .btn-send:disabled { background: var(--surface2); color: var(--text3); cursor: not-allowed; }
+  .bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);
+    border-top:1px solid var(--border);padding:10px 16px;
+    padding-bottom:calc(10px + env(safe-area-inset-bottom));
+    display:flex;gap:8px;max-width:600px;margin:0 auto;}
+  .btn-preview{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
+    color:var(--text);font-family:'DM Sans',sans-serif;font-weight:500;
+    font-size:14px;padding:13px 14px;cursor:pointer;white-space:nowrap;}
+  .btn-send{flex:1;background:var(--accent);border:none;border-radius:var(--radius-sm);
+    color:white;font-family:'DM Sans',sans-serif;font-weight:600;font-size:15px;
+    padding:13px;cursor:pointer;transition:background 0.15s,transform 0.1s;
+    display:flex;align-items:center;justify-content:center;gap:6px;}
+  .btn-send:active{transform:scale(0.98);}
+  .btn-send:disabled{background:var(--surface2);color:var(--text3);cursor:not-allowed;}
 
-  /* Toast */
-  .toast {
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 12px 20px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px;
-    z-index: 999; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.success { border-color: var(--success); }
-  .toast.error   { border-color: var(--error); }
-  .toast.info    { border-color: var(--info); }
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:12px 20px;font-size:14px;font-weight:500;display:flex;align-items:center;gap:8px;
+    z-index:999;transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    white-space:nowrap;box-shadow:0 4px 24px rgba(0,0,0,0.4);}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .toast.success{border-color:var(--success);}
+  .toast.error{border-color:var(--error);}
+  .toast.info{border-color:var(--info);}
 
-  /* Modal */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    z-index: 200; align-items: flex-end; justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--surface); border-radius: 20px 20px 0 0; border: 1px solid var(--border);
-    border-bottom: none; padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
-    width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto;
-    animation: slideUp 0.25s ease;
-  }
-  @keyframes slideUp { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
-  .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
-  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+    z-index:200;align-items:flex-end;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border-radius:20px 20px 0 0;border:1px solid var(--border);
+    border-bottom:none;padding:20px 20px calc(20px + env(safe-area-inset-bottom));
+    width:100%;max-width:600px;max-height:85vh;overflow-y:auto;animation:slideUp 0.25s ease;}
+  @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
+  .modal h2{font-size:16px;font-weight:600;margin-bottom:16px;}
 
-  .pdf-preview { background: white; border-radius: var(--radius-sm); padding: 20px; color: #1a1a2e; font-family: 'DM Sans', sans-serif; }
-  .pdf-preview h3 { font-size: 14px; color: #1F4E79; border-bottom: 2px solid #f97316; padding-bottom: 6px; margin: 14px 0 8px; }
-  .pdf-preview h3:first-child { margin-top: 0; }
-  .pdf-preview .prev-title { color: #374151; border-bottom-color: #3b82f6; }
-  .pdf-preview .meta { font-size: 11px; color: #666; margin-bottom: 14px; }
-  .pdf-preview table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 8px; }
-  .pdf-preview th { background: #1F4E79; color: white; padding: 7px 8px; text-align: left; }
-  .pdf-preview td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
-  .pdf-preview tr:nth-child(even) td { background: #f8f9fa; }
+  .pdf-preview{background:white;border-radius:var(--radius-sm);padding:20px;color:#1a1a2e;font-family:'DM Sans',sans-serif;}
+  .pdf-preview h3{font-size:13px;color:#1F4E79;border-bottom:2px solid #f97316;padding-bottom:6px;margin:14px 0 8px;}
+  .pdf-preview h3:first-child{margin-top:0;}
+  .pdf-preview h3.prev1{color:#2563eb;border-bottom-color:#3b82f6;}
+  .pdf-preview h3.prev2{color:#b45309;border-bottom-color:#eab308;}
+  .pdf-preview .meta{font-size:11px;color:#666;margin-bottom:14px;}
+  .pdf-preview table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:8px;}
+  .pdf-preview th{background:#1F4E79;color:white;padding:7px 8px;text-align:left;}
+  .pdf-preview td{padding:6px 8px;border-bottom:1px solid #e5e7eb;}
+  .pdf-preview tr:nth-child(even) td{background:#f8f9fa;}
 
-  .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-  .btn-modal { flex: 1; padding: 13px; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 14px; cursor: pointer; border: none; }
-  .btn-modal.primary   { background: var(--accent); color: white; }
-  .btn-modal.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .modal-actions{display:flex;gap:10px;margin-top:16px;}
+  .btn-modal{flex:1;padding:13px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;
+    font-weight:600;font-size:14px;cursor:pointer;border:none;}
+  .btn-modal.primary{background:var(--accent);color:white;}
+  .btn-modal.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
 
-  /* Loader overlay */
-  .loader-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(15,17,23,0.7);
-    z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 12px;
-  }
-  .loader-overlay.open { display: flex; }
-  .spinner {
-    width: 36px; height: 36px; border: 3px solid var(--border);
-    border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
-  }
-  .loader-msg { font-size: 14px; color: var(--text2); }
+  .loader-overlay{display:none;position:fixed;inset:0;background:rgba(15,17,23,0.7);
+    z-index:300;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+  .loader-overlay.open{display:flex;}
+  .spinner{width:36px;height:36px;border:3px solid var(--border);
+    border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+  .loader-msg{font-size:14px;color:var(--text2);}
 </style>
 </head>
 <body>
 
 <div class="toast" id="toast"></div>
-
 <div class="loader-overlay" id="loader">
   <div class="spinner"></div>
   <div class="loader-msg" id="loader-msg">Chargement…</div>
@@ -252,7 +189,6 @@
 
 <main class="main">
 
-  <!-- Banner config -->
   <div class="config-banner" id="config-banner" style="display:none">
     ⚙️ <span>Google Sheet non configuré. <a href="#" onclick="showSetupGuide()">Voir le guide de configuration</a></span>
   </div>
@@ -270,7 +206,7 @@
           <option>ASSELIN Franck</option>
           <option>BIANAY Moïse</option>
           <option>ELIEN Celestin</option>
-          <option>Auguste Ezechiel</option>
+          <option>AUGUSTE Ezechiel</option>
           <option>FERGA Stracy</option>
           <option>FERRAND Swann</option>
           <option>JABES Jacob</option>
@@ -313,17 +249,22 @@
     </div>
   </div>
 
-  <p class="section-title">Récapitulatif</p>
+  <p class="section-title">Récapitulatif 3 mois</p>
 
+  <!-- 3 onglets -->
   <div class="tabs">
-    <div class="tab active" id="tab-m"    onclick="switchTab('m')">
+    <div class="tab active" id="tab-m"     onclick="switchTab('m')">
       <span id="tab-m-label">—</span><span class="badge" id="badge-m">0</span>
     </div>
-    <div class="tab" id="tab-prev" onclick="switchTab('prev')">
+    <div class="tab" id="tab-prev"  onclick="switchTab('prev')">
       <span id="tab-prev-label">—</span><span class="badge" id="badge-prev">0</span>
+    </div>
+    <div class="tab" id="tab-prev2" onclick="switchTab('prev2')">
+      <span id="tab-prev2-label">—</span><span class="badge" id="badge-prev2">0</span>
     </div>
   </div>
 
+  <!-- Panel M -->
   <div id="panel-m">
     <div class="sync-status">
       <div class="sync-dot" id="sync-dot"></div>
@@ -336,10 +277,21 @@
     </div>
   </div>
 
+  <!-- Panel M-1 -->
   <div id="panel-prev" style="display:none">
-    <div class="readonly-notice">ℹ️ Données du mois précédent — lecture seule</div>
+    <div class="readonly-notice blue">ℹ️ Données de M-1 — lecture seule</div>
     <div class="card">
       <div id="absence-list-prev">
+        <div class="empty-state"><div class="icon">📋</div>Chargement…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel M-2 -->
+  <div id="panel-prev2" style="display:none">
+    <div class="readonly-notice yellow">⚠️ Données de M-2 — lecture seule</div>
+    <div class="card">
+      <div id="absence-list-prev2">
         <div class="empty-state"><div class="icon">📋</div>Chargement…</div>
       </div>
     </div>
@@ -360,45 +312,61 @@
     <div id="pdf-preview-content"></div>
     <div class="modal-actions">
       <button class="btn-modal secondary" onclick="document.getElementById('modal-overlay').classList.remove('open')">Fermer</button>
-      <button class="btn-modal primary" onclick="sendReport(); document.getElementById('modal-overlay').classList.remove('open')">📨 Envoyer</button>
+      <button class="btn-modal primary" onclick="sendReport();document.getElementById('modal-overlay').classList.remove('open')">📨 Envoyer</button>
     </div>
   </div>
 </div>
 
 <script>
-// ════════════════════════════════════════════════════════
-//  CONFIG — À remplir après avoir créé le Apps Script
-// ════════════════════════════════════════════════════════
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwC_P389igdawx1e8HA4ZZZYIsc6iHdap2vaDqM4F0NQZ73z88l0NC67X2ftZ038R7Z/exec";  // ← coller ici l'URL du script déployé
-
+// ══════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════
+const SCRIPT_URL        = "https://script.google.com/macros/s/AKfycbwC_P389igdawx1e8HA4ZZZYIsc6iHdap2vaDqM4F0NQZ73z88l0NC67X2ftZ038R7Z/exec";
 const EMAILJS_PUBLIC_KEY  = "9cpxDjEG1jXr_0dcv";
 const EMAILJS_SERVICE_ID  = "service_bvmanla";
 const EMAILJS_TEMPLATE_ID = "template_lky1ji7";
-const DEST_EMAILS = ["synergiebtp971@gmail.com", "MK.synergiebtp@gmail.com"];
 
-// ════════════════════════════════════════════════════════
-//  DATES
-// ════════════════════════════════════════════════════════
-const now    = new Date();
-const YEAR   = now.getFullYear();
-const MONTH  = now.getMonth();
+// ✅ Correction : adresses en minuscules exactes
+const DEST_EMAILS = ["synergiebtp971@gmail.com", "mk.synergiebtp@gmail.com"];
+
+// ══════════════════════════════════════════════
+//  DATES — 3 mois
+// ══════════════════════════════════════════════
+const now   = new Date();
+const YEAR  = now.getFullYear();
+const MONTH = now.getMonth();
 const MONTHS_FR = ["Janvier","Février","Mars","Avril","Mai","Juin",
                    "Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 
-const monthLabel = MONTHS_FR[MONTH] + " " + YEAR;
-const prevDate   = new Date(YEAR, MONTH - 1, 1);
-const prevLabel  = MONTHS_FR[prevDate.getMonth()] + " " + prevDate.getFullYear();
+function monthKey(y, m) {
+  return `${y}-${String(m+1).padStart(2,'0')}`;
+}
+function monthLabel(y, m) {
+  return MONTHS_FR[m] + " " + y;
+}
 
-// Clés mois pour filtrage
-const keyM    = `${YEAR}-${String(MONTH+1).padStart(2,'0')}`;
-const keyPrev = `${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}`;
+// M
+const d0    = new Date(YEAR, MONTH,   1);
+const key0  = monthKey(d0.getFullYear(), d0.getMonth());
+const lab0  = monthLabel(d0.getFullYear(), d0.getMonth());
 
-document.getElementById("month-badge").textContent    = monthLabel;
-document.getElementById("tab-m-label").textContent    = monthLabel;
-document.getElementById("tab-prev-label").textContent = prevLabel;
+// M-1
+const d1    = new Date(YEAR, MONTH-1, 1);
+const key1  = monthKey(d1.getFullYear(), d1.getMonth());
+const lab1  = monthLabel(d1.getFullYear(), d1.getMonth());
 
-// Bornes dates
-const minDate = new Date(YEAR, MONTH, 1).toISOString().split("T")[0];
+// M-2
+const d2    = new Date(YEAR, MONTH-2, 1);
+const key2  = monthKey(d2.getFullYear(), d2.getMonth());
+const lab2  = monthLabel(d2.getFullYear(), d2.getMonth());
+
+document.getElementById("month-badge").textContent     = lab0;
+document.getElementById("tab-m-label").textContent     = lab0;
+document.getElementById("tab-prev-label").textContent  = lab1;
+document.getElementById("tab-prev2-label").textContent = lab2;
+
+// Bornes date saisie (mois courant uniquement)
+const minDate = new Date(YEAR, MONTH,   1).toISOString().split("T")[0];
 const maxDate = new Date(YEAR, MONTH+1, 0).toISOString().split("T")[0];
 const duEl = document.getElementById("date-du");
 const auEl = document.getElementById("date-au");
@@ -410,107 +378,92 @@ duEl.addEventListener("change", function() {
   auEl.min = this.value;
 });
 
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  ÉTAT
-// ════════════════════════════════════════════════════════
-let absences     = [];
-let absencesPrev = [];
-let configured   = false;
+// ══════════════════════════════════════════════
+let abs0 = [], abs1 = [], abs2 = [];
+let configured = false;
 
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  INIT
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 window.addEventListener("load", () => {
-  if (SCRIPT_URL === "VOTRE_APPS_SCRIPT_URL" || !SCRIPT_URL.startsWith("https://")) {
+  if (!SCRIPT_URL || SCRIPT_URL === "VOTRE_APPS_SCRIPT_URL" || !SCRIPT_URL.startsWith("https://")) {
     document.getElementById("config-banner").style.display = "flex";
     setSyncStatus("err", "Google Sheet non connecté");
-    renderList();
+    renderAll();
   } else {
     configured = true;
     loadFromSheet();
   }
 });
 
-// ════════════════════════════════════════════════════════
-//  LECTURE Google Sheet
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  GOOGLE SHEET — LECTURE
+// ══════════════════════════════════════════════
 async function loadFromSheet() {
   if (!configured) return;
   setSyncStatus("busy", "Synchronisation…");
-  const btn = document.getElementById("sync-btn");
-  btn.classList.add("spinning");
-
+  document.getElementById("sync-btn").classList.add("spinning");
   try {
     const res  = await fetch(`${SCRIPT_URL}?action=get`);
     const data = await res.json();
-
-    absences     = data.filter(r => r.mois === keyM);
-    absencesPrev = data.filter(r => r.mois === keyPrev);
-
+    abs0 = data.filter(r => r.mois === key0);
+    abs1 = data.filter(r => r.mois === key1);
+    abs2 = data.filter(r => r.mois === key2);
     const t = new Date();
     setSyncStatus("ok", `Mis à jour à ${t.getHours()}h${String(t.getMinutes()).padStart(2,'0')}`);
-    renderList();
+    renderAll();
   } catch(e) {
     setSyncStatus("err", "Erreur de connexion");
     showToast("❌ Impossible de charger les données", "error");
   }
-  btn.classList.remove("spinning");
+  document.getElementById("sync-btn").classList.remove("spinning");
 }
 
-// ════════════════════════════════════════════════════════
-//  ÉCRITURE Google Sheet
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  GOOGLE SHEET — ÉCRITURE / SUPPRESSION
+// ══════════════════════════════════════════════
 async function writeToSheet(absence) {
   const res = await fetch(SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({ action: "add", data: absence }),
+    method:"POST", body: JSON.stringify({ action:"add", data: absence })
   });
   return res.json();
 }
-
 async function deleteFromSheet(id) {
   const res = await fetch(SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({ action: "delete", id }),
+    method:"POST", body: JSON.stringify({ action:"delete", id })
   });
   return res.json();
 }
 
-// ════════════════════════════════════════════════════════
-//  AJOUTER UNE ABSENCE
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  AJOUTER
+// ══════════════════════════════════════════════
 async function addAbsence() {
   const salarie = document.getElementById("salarie-select").value;
   const du      = duEl.value;
   const au      = auEl.value;
   const motif   = document.getElementById("motif").value.trim();
-
-  if (!salarie) { showToast("⚠️ Sélectionner un salarié", "error"); return; }
-  if (!du || !au) { showToast("⚠️ Renseigner les dates", "error"); return; }
+  if (!salarie)  { showToast("⚠️ Sélectionner un salarié", "error"); return; }
+  if (!du || !au){ showToast("⚠️ Renseigner les dates", "error"); return; }
   if (au < du)   { showToast("⚠️ Date de fin avant le début", "error"); return; }
+  if (!configured){ showToast("⚙️ Configurer Google Sheet d'abord", "error"); return; }
 
-  if (!configured) {
-    showToast("⚙️ Configurer Google Sheet d'abord", "error"); return;
-  }
-
-  const btn = document.getElementById("btn-add");
-  btn.disabled = true;
+  document.getElementById("btn-add").disabled = true;
   showLoader("Enregistrement…");
 
   const absence = {
-    id:      Date.now().toString(),
-    mois:    keyM,
-    salarie,
-    du,
-    au,
-    motif:   motif || "—",
+    id:       Date.now().toString(),
+    mois:     key0,
+    salarie, du, au,
+    motif:    motif || "—",
     saisi_le: new Date().toLocaleDateString("fr-FR"),
   };
-
   try {
     await writeToSheet(absence);
-    absences.push(absence);
-    renderList();
+    abs0.push(absence);
+    renderAll();
     document.getElementById("salarie-select").value = "";
     document.getElementById("motif").value = "";
     showToast("✅ Absence enregistrée !", "success");
@@ -518,21 +471,20 @@ async function addAbsence() {
   } catch(e) {
     showToast("❌ Erreur d'enregistrement", "error");
   }
-
   hideLoader();
-  btn.disabled = false;
+  document.getElementById("btn-add").disabled = false;
 }
 
-// ════════════════════════════════════════════════════════
-//  SUPPRIMER UNE ABSENCE
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  SUPPRIMER
+// ══════════════════════════════════════════════
 async function removeAbsence(id) {
   if (!configured) return;
   showLoader("Suppression…");
   try {
     await deleteFromSheet(id);
-    absences = absences.filter(a => a.id !== id);
-    renderList();
+    abs0 = abs0.filter(a => a.id !== id);
+    renderAll();
     showToast("🗑 Absence supprimée", "info");
   } catch(e) {
     showToast("❌ Erreur de suppression", "error");
@@ -540,57 +492,56 @@ async function removeAbsence(id) {
   hideLoader();
 }
 
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  ONGLETS
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 function switchTab(tab) {
-  document.getElementById("tab-m").classList.toggle("active", tab === 'm');
-  document.getElementById("tab-prev").classList.toggle("active", tab === 'prev');
-  document.getElementById("panel-m").style.display      = tab === 'm'    ? '' : 'none';
-  document.getElementById("panel-prev").style.display   = tab === 'prev' ? '' : 'none';
-  document.getElementById("saisie-block").style.display = tab === 'm'    ? '' : 'none';
+  ["m","prev","prev2"].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle("active", t === tab);
+    document.getElementById(`panel-${t}`).style.display = t === tab ? "" : "none";
+  });
+  document.getElementById("saisie-block").style.display = tab === "m" ? "" : "none";
 }
 
-// ════════════════════════════════════════════════════════
-//  RENDU LISTES
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  RENDU
+// ══════════════════════════════════════════════
 function fmt(d) {
   if (!d) return "—";
-  const [y, m, j] = d.split("-");
+  const [y,m,j] = d.split("-");
   return `${j}/${m}/${y}`;
 }
 
-function renderList() {
-  document.getElementById("badge-m").textContent    = absences.length;
-  document.getElementById("badge-prev").textContent = absencesPrev.length;
-  const total = absences.length + absencesPrev.length;
-  document.getElementById("btn-send").disabled = total === 0;
-
-  const el = document.getElementById("absence-list");
-  el.innerHTML = absences.length === 0
-    ? `<div class="empty-state"><div class="icon">📋</div>Aucune absence ce mois-ci</div>`
-    : absences.map(a => `
-        <div class="absence-item">
-          <div class="name">${a.salarie}</div>
-          <div class="dates">${fmt(a.du)} → ${fmt(a.au)}</div>
-          <div class="motif-tag">${a.motif}</div>
-          <button class="btn-remove" onclick="removeAbsence('${a.id}')">✕</button>
-        </div>`).join("");
-
-  const elP = document.getElementById("absence-list-prev");
-  elP.innerHTML = absencesPrev.length === 0
-    ? `<div class="empty-state"><div class="icon">📋</div>Aucune absence enregistrée</div>`
-    : absencesPrev.map(a => `
-        <div class="absence-item prev-month">
-          <div class="name">${a.salarie}</div>
-          <div class="dates">${fmt(a.du)} → ${fmt(a.au)}</div>
-          <div class="motif-tag">${a.motif}</div>
-        </div>`).join("");
+function renderSection(listId, data, canDelete) {
+  const el = document.getElementById(listId);
+  if (!data.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📋</div>Aucune absence enregistrée</div>`;
+    return;
+  }
+  el.innerHTML = data.map(a => `
+    <div class="absence-item ${canDelete ? '' : listId === 'absence-list-prev' ? 'prev-month' : 'prev2-month'}">
+      <div class="name">${a.salarie}</div>
+      <div class="dates">${fmt(a.du)} → ${fmt(a.au)}</div>
+      <div class="motif-tag">${a.motif}</div>
+      ${canDelete ? `<button class="btn-remove" onclick="removeAbsence('${a.id}')">✕</button>` : ''}
+    </div>`).join("");
 }
 
-// ════════════════════════════════════════════════════════
-//  APERÇU & ENVOI
-// ════════════════════════════════════════════════════════
+function renderAll() {
+  document.getElementById("badge-m").textContent     = abs0.length;
+  document.getElementById("badge-prev").textContent  = abs1.length;
+  document.getElementById("badge-prev2").textContent = abs2.length;
+  const total = abs0.length + abs1.length + abs2.length;
+  document.getElementById("btn-send").disabled = total === 0;
+
+  renderSection("absence-list",       abs0, true);
+  renderSection("absence-list-prev",  abs1, false);
+  renderSection("absence-list-prev2", abs2, false);
+}
+
+// ══════════════════════════════════════════════
+//  APERÇU
+// ══════════════════════════════════════════════
 function buildTable(list) {
   if (!list.length) return `<p style="color:#9ca3af;font-size:12px;margin-bottom:8px">Aucune absence</p>`;
   return `<table>
@@ -604,17 +555,17 @@ function buildTable(list) {
 }
 
 function openPreview() {
-  if (!absences.length && !absencesPrev.length) {
-    showToast("⚠️ Aucune absence à prévisualiser", "error"); return;
-  }
-  const today = new Date().toLocaleDateString("fr-FR", {day:"2-digit",month:"long",year:"numeric"});
+  const total = abs0.length + abs1.length + abs2.length;
+  if (!total) { showToast("⚠️ Aucune absence à prévisualiser", "error"); return; }
+  const today = new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"});
   document.getElementById("pdf-preview-content").innerHTML = `
     <div class="pdf-preview">
-      <p class="meta">Généré le ${today} · M : ${absences.length} abs. · M-1 : ${absencesPrev.length} abs.</p>
-      <h3>${monthLabel} — ${absences.length} absence(s)</h3>${buildTable(absences)}
-      <h3 class="prev-title">${prevLabel} — ${absencesPrev.length} absence(s)</h3>${buildTable(absencesPrev)}
+      <p class="meta">Généré le ${today} · ${lab0} : ${abs0.length} abs. · ${lab1} : ${abs1.length} abs. · ${lab2} : ${abs2.length} abs.</p>
+      <h3>${lab0} — ${abs0.length} absence(s)</h3>${buildTable(abs0)}
+      <h3 class="prev1">${lab1} — ${abs1.length} absence(s)</h3>${buildTable(abs1)}
+      <h3 class="prev2">${lab2} — ${abs2.length} absence(s)</h3>${buildTable(abs2)}
     </div>`;
-  document.getElementById("modal-title").textContent = monthLabel + " & " + prevLabel;
+  document.getElementById("modal-title").textContent = `${lab0} / ${lab1} / ${lab2}`;
   document.getElementById("modal-overlay").classList.add("open");
 }
 
@@ -623,13 +574,14 @@ function closeModal(e) {
     document.getElementById("modal-overlay").classList.remove("open");
 }
 
+// ══════════════════════════════════════════════
+//  ENVOI EMAIL — ✅ corrigé : 2 destinataires + gestion erreurs séparée
+// ══════════════════════════════════════════════
 async function sendReport() {
-  if (!absences.length && !absencesPrev.length) {
-    showToast("⚠️ Aucune absence à envoyer", "error"); return;
-  }
-  if (EMAILJS_PUBLIC_KEY === "VOTRE_PUBLIC_KEY") {
-    showToast("⚙️ EmailJS non configuré", "error"); return;
-  }
+  const total = abs0.length + abs1.length + abs2.length;
+  if (!total) { showToast("⚠️ Aucune absence à envoyer", "error"); return; }
+  if (EMAILJS_PUBLIC_KEY === "VOTRE_PUBLIC_KEY") { showToast("⚙️ EmailJS non configuré", "error"); return; }
+
   document.getElementById("btn-send").disabled = true;
   showLoader("Envoi en cours…");
 
@@ -639,29 +591,44 @@ async function sendReport() {
       list.map(a=>`  • ${a.salarie} : du ${fmt(a.du)} au ${fmt(a.au)} — ${a.motif}`).join("\n") + "\n";
   };
 
-  try {
-    const today = new Date().toLocaleDateString("fr-FR");
-    for (const email of DEST_EMAILS) {
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        to_email:       email,
-        subject:        `Absences ${monthLabel} & ${prevLabel} — Synergie BTP`,
-        month:          `${monthLabel} & ${prevLabel}`,
-        date_envoi:     today,
-        nb_absences:    `${absences.length} (M) + ${absencesPrev.length} (M-1)`,
-        liste_absences: buildListe(absences, monthLabel) + "\n" + buildListe(absencesPrev, prevLabel),
-      }, EMAILJS_PUBLIC_KEY);
-    }
-    showToast("✅ Récap envoyé aux 2 adresses !", "success");
-  } catch(e) {
-    showToast("❌ Erreur d'envoi", "error");
-  }
+  const today = new Date().toLocaleDateString("fr-FR");
+  const payload = {
+    subject:        `Absences ${lab0} / ${lab1} / ${lab2} — Synergie BTP`,
+    month:          `${lab0} / ${lab1} / ${lab2}`,
+    date_envoi:     today,
+    nb_absences:    `${abs0.length} (M) + ${abs1.length} (M-1) + ${abs2.length} (M-2)`,
+    liste_absences: buildListe(abs0, lab0) + "\n" + buildListe(abs1, lab1) + "\n" + buildListe(abs2, lab2),
+  };
+
+  // ✅ Envoi indépendant à chaque destinataire avec résultat individuel
+  const results = await Promise.allSettled(
+    DEST_EMAILS.map(email =>
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID,
+        { ...payload, to_email: email },
+        EMAILJS_PUBLIC_KEY
+      )
+    )
+  );
+
+  const ok      = results.filter(r => r.status === "fulfilled").length;
+  const failed  = results.filter(r => r.status === "rejected");
+  const failAddr = failed.map((_, i) => DEST_EMAILS[results.indexOf(results.filter(r=>r.status==="rejected")[i])]);
+
   hideLoader();
   document.getElementById("btn-send").disabled = false;
+
+  if (ok === DEST_EMAILS.length) {
+    showToast(`✅ Récap envoyé aux ${DEST_EMAILS.length} destinataires !`, "success");
+  } else if (ok > 0) {
+    showToast(`⚠️ Envoyé à ${ok}/${DEST_EMAILS.length} destinataires`, "info");
+  } else {
+    showToast("❌ Échec de l'envoi", "error");
+  }
 }
 
-// ════════════════════════════════════════════════════════
-//  GUIDE DE CONFIG
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
+//  GUIDE CONFIG
+// ══════════════════════════════════════════════
 function showSetupGuide() {
   document.getElementById("pdf-preview-content").innerHTML = `
     <div style="color:#1a1a2e;font-size:13px;line-height:1.8">
@@ -671,32 +638,25 @@ function showSetupGuide() {
       <p><strong>1.</strong> Va sur <strong>script.google.com</strong></p>
       <p><strong>2.</strong> Crée un nouveau projet, colle le code Apps Script fourni</p>
       <p><strong>3.</strong> Déploie → "Nouvelle version" → "Tout le monde" → copie l'URL</p>
-      <p><strong>4.</strong> Dans index.html, remplace :<br>
-        <code style="background:#f3f4f6;padding:2px 6px;border-radius:3px;font-size:11px">
-          VOTRE_APPS_SCRIPT_URL → l'URL copiée
-        </code>
-      </p>
+      <p><strong>4.</strong> Dans index.html, remplace VOTRE_APPS_SCRIPT_URL par l'URL copiée</p>
     </div>`;
   document.getElementById("modal-title").textContent = "Configuration";
   document.getElementById("modal-overlay").classList.add("open");
 }
 
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 //  HELPERS UI
-// ════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 function setSyncStatus(state, msg) {
-  const dot = document.getElementById("sync-dot");
-  dot.className = "sync-dot " + state;
+  document.getElementById("sync-dot").className = "sync-dot " + state;
   document.getElementById("sync-label").textContent = msg;
 }
 function showLoader(msg) {
   document.getElementById("loader-msg").textContent = msg;
   document.getElementById("loader").classList.add("open");
 }
-function hideLoader() {
-  document.getElementById("loader").classList.remove("open");
-}
-function showToast(msg, type = "") {
+function hideLoader() { document.getElementById("loader").classList.remove("open"); }
+function showToast(msg, type="") {
   const t = document.getElementById("toast");
   t.textContent = msg; t.className = "toast show " + type;
   clearTimeout(t._to);

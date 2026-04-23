@@ -188,7 +188,8 @@
 
   <!-- Bannière erreur -->
   <div class="error-banner" id="error-banner">
-    ❌ <span id="error-msg">Impossible de contacter Google Sheets.</span>
+    ❌ <div style="flex:1"><span id="error-msg">Impossible de contacter Google Sheets.</span></div>
+    <button onclick="loadAll()" style="background:var(--error);border:none;color:white;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif;font-weight:600;">↺ Réessayer</button>
   </div>
 
   <div id="saisie-block">
@@ -375,6 +376,9 @@ function jsonpGet(url) {
 //  CHARGEMENT depuis Google Sheets
 // ══════════════════════════════════════════════
 async function loadAll() {
+  // Affiche le loader complet uniquement si le récap est encore vide (premier chargement)
+  const isFirstLoad = abs0.length + abs1.length + abs2.length === 0;
+  if (isFirstLoad) showLoader("Chargement des absences…");
   setSyncStatus("busy", "Chargement…");
   document.getElementById("sync-btn").classList.add("spinning");
   document.getElementById("error-banner").style.display = "none";
@@ -403,6 +407,7 @@ async function loadAll() {
   }
 
   document.getElementById("sync-btn").classList.remove("spinning");
+  hideLoader();
 }
 
 // ══════════════════════════════════════════════
@@ -640,12 +645,22 @@ function showToast(msg, type="") {
 // ══════════════════════════════════════════════
 //  DÉMARRAGE — charge depuis Google Sheets
 // ══════════════════════════════════════════════
-window.addEventListener("load", () => {
-  // Initialisation EmailJS (obligatoire en v3)
-  emailjs.init(EMAILJS_PUBLIC_KEY);
 
-  renderAll(); // affiche état vide pendant le chargement
-  loadAll();   // charge depuis Google Sheets
+// Initialisation EmailJS (obligatoire en v3)
+emailjs.init(EMAILJS_PUBLIC_KEY);
+
+renderAll(); // affiche état vide pendant le chargement
+
+// pageshow : se déclenche au chargement initial ET quand la page
+// revient du cache navigateur (bfcache) — cas fréquent sur mobile
+window.addEventListener("pageshow", function() {
+  loadAll();
+});
+
+// visibilitychange : rafraîchit le récap quand l'utilisateur
+// revient sur l'onglet après l'avoir mis en arrière-plan
+document.addEventListener("visibilitychange", function() {
+  if (!document.hidden) loadAll();
 });
 </script>
 </body>

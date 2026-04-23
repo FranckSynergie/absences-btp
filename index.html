@@ -292,7 +292,7 @@
 // ══════════════════════════════════════════════
 //  CONFIG — ne pas modifier
 // ══════════════════════════════════════════════
-const SCRIPT_URL          = "https://script.google.com/macros/s/AKfycbzpBxNmG0zjSDxZdjEg3G0o7PVoaCZTSvCLPBVDDTJKehWqtgz-Pz3phUqWy4TNkADxxQ/exec";
+const SCRIPT_URL          = "https://script.google.com/macros/s/AKfycbzvoKJMAbuiEVrvKrjYQLGgZ2kQbaCcOJ5EQ_o8PTD8iEubfxKeC2V-WnbcNDxgc9iczQ/exec";
 const EMAILJS_PUBLIC_KEY  = "9cpxDjEG1jXr_0dcv";
 const EMAILJS_SERVICE_ID  = "service_bvmanla";
 const EMAILJS_TEMPLATE_ID = "template_lky1ji7";
@@ -343,26 +343,48 @@ let abs0=[], abs1=[], abs2=[];
 //  CHARGEMENT depuis Google Sheets
 //  C'est la SEULE source de vérité
 // ══════════════════════════════════════════════
+// ── JSONP loader — contourne les problèmes CORS de Google Apps Script ──
+function jsonpGet(url) {
+  return new Promise((resolve, reject) => {
+    const cb = 'gscb_' + Date.now();
+    const s  = document.createElement('script');
+
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('Timeout — Apps Script ne répond pas (>12s)'));
+    }, 12000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cb];
+      if (s.parentNode) s.parentNode.removeChild(s);
+    }
+
+    window[cb] = function(data) {
+      cleanup();
+      resolve(data);
+    };
+
+    s.onerror = function() {
+      cleanup();
+      reject(new Error('Impossible de joindre Apps Script'));
+    };
+
+    s.src = url + '&callback=' + cb + '&t=' + Date.now();
+    document.head.appendChild(s);
+  });
+}
+
 async function loadAll() {
   setSyncStatus("busy", "Chargement…");
   document.getElementById("sync-btn").classList.add("spinning");
   document.getElementById("error-banner").style.display = "none";
 
   try {
-    const url  = `${SCRIPT_URL}?action=get&t=${Date.now()}`;
-    const res  = await fetch(url, { redirect: "follow" });
-    const text = await res.text();
+    const data = await jsonpGet(SCRIPT_URL + '?action=get');
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch(_) {
-      const extrait = text.replace(/<[^>]+>/g,"").trim().substring(0, 120);
-      throw new Error("Réponse invalide du serveur (pas du JSON).\n" + extrait);
-    }
-
-    if (!Array.isArray(data)) throw new Error("Format inattendu : " + JSON.stringify(data).substring(0,80));
-    if (data.error) throw new Error(data.error);
+    if (data && data.error) throw new Error(data.error);
+    if (!Array.isArray(data))  throw new Error("Format inattendu : " + JSON.stringify(data).substring(0,80));
 
     abs0 = data.filter(r => r.mois === M0.key);
     abs1 = data.filter(r => r.mois === M1.key);
@@ -370,15 +392,16 @@ async function loadAll() {
 
     renderAll();
     const t = new Date();
-    setSyncStatus("ok", `Sync OK à ${t.getHours()}h${String(t.getMinutes()).padStart(2,'0')} · ${data.length} ligne(s)`);
+    setSyncStatus("ok", `Sync OK à ${t.getHours()}h${String(t.getMinutes()).padStart(2,'0')} · ${data.length} enregistrement(s)`);
 
   } catch(err) {
     setSyncStatus("err", "Erreur Google Sheets");
-    const banner = document.getElementById("error-banner");
-    banner.style.display = "flex";
+    document.getElementById("error-banner").style.display = "flex";
     document.getElementById("error-msg").innerHTML =
-      "<strong>Impossible de charger les données.</strong><br><span style='font-size:11px;opacity:0.8'>" + err.message.replace(/\n/g,"<br>") + "</span>";
-    showToast("❌ " + err.message.split("\n")[0], "error");
+      '<strong>Impossible de charger les données.</strong><br>' +
+      '<span style="font-size:11px;opacity:0.8">' + err.message + '<br>' +
+      'Vérifiez que le script est redéployé avec accès "Tout le monde".</span>';
+    showToast("❌ " + err.message, "error");
   }
 
   document.getElementById("sync-btn").classList.remove("spinning");

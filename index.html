@@ -292,7 +292,7 @@
 // ══════════════════════════════════════════════
 //  CONFIG — ne pas modifier
 // ══════════════════════════════════════════════
-const SCRIPT_URL          = "https://script.google.com/macros/s/AKfycbzvoKJMAbuiEVrvKrjYQLGgZ2kQbaCcOJ5EQ_o8PTD8iEubfxKeC2V-WnbcNDxgc9iczQ/exec";
+const SCRIPT_URL          = "https://script.google.com/macros/s/AKfycbxHIwp63NxV-Db1YwsRpfRtNngBshpkwS5Xti3GvH0QbioaING17axhmwmO44nj_tVm2Q/exec";
 const EMAILJS_PUBLIC_KEY  = "9cpxDjEG1jXr_0dcv";
 const EMAILJS_SERVICE_ID  = "service_bvmanla";
 const EMAILJS_TEMPLATE_ID = "template_lky1ji7";
@@ -343,16 +343,18 @@ let abs0=[], abs1=[], abs2=[];
 //  CHARGEMENT depuis Google Sheets
 //  C'est la SEULE source de vérité
 // ══════════════════════════════════════════════
-// ── JSONP loader — contourne les problèmes CORS de Google Apps Script ──
+// ══════════════════════════════════════════════
+//  JSONP — contourne CORS et redirections Apps Script
+//  Toutes les opérations (lecture, ajout, suppression) passent par ici
+// ══════════════════════════════════════════════
 function jsonpGet(url) {
-  return new Promise((resolve, reject) => {
-    const cb = 'gscb_' + Date.now();
-    const s  = document.createElement('script');
-
-    const timer = setTimeout(() => {
+  return new Promise(function(resolve, reject) {
+    var cb    = 'gscb_' + Date.now();
+    var s     = document.createElement('script');
+    var timer = setTimeout(function() {
       cleanup();
-      reject(new Error('Timeout — Apps Script ne répond pas (>12s)'));
-    }, 12000);
+      reject(new Error('Timeout — Apps Script ne répond pas (>15s)'));
+    }, 15000);
 
     function cleanup() {
       clearTimeout(timer);
@@ -360,21 +362,18 @@ function jsonpGet(url) {
       if (s.parentNode) s.parentNode.removeChild(s);
     }
 
-    window[cb] = function(data) {
-      cleanup();
-      resolve(data);
-    };
+    window[cb] = function(data) { cleanup(); resolve(data); };
+    s.onerror  = function()     { cleanup(); reject(new Error('Script introuvable — vérifiez l\'URL Apps Script')); };
 
-    s.onerror = function() {
-      cleanup();
-      reject(new Error('Impossible de joindre Apps Script'));
-    };
-
+    // Le callback et le cache-buster sont ajoutés en fin d'URL
     s.src = url + '&callback=' + cb + '&t=' + Date.now();
     document.head.appendChild(s);
   });
 }
 
+// ══════════════════════════════════════════════
+//  CHARGEMENT depuis Google Sheets
+// ══════════════════════════════════════════════
 async function loadAll() {
   setSyncStatus("busy", "Chargement…");
   document.getElementById("sync-btn").classList.add("spinning");
@@ -384,7 +383,7 @@ async function loadAll() {
     const data = await jsonpGet(SCRIPT_URL + '?action=get');
 
     if (data && data.error) throw new Error(data.error);
-    if (!Array.isArray(data))  throw new Error("Format inattendu : " + JSON.stringify(data).substring(0,80));
+    if (!Array.isArray(data)) throw new Error("Réponse inattendue : " + JSON.stringify(data).substring(0, 80));
 
     abs0 = data.filter(r => r.mois === M0.key);
     abs1 = data.filter(r => r.mois === M1.key);
@@ -392,73 +391,80 @@ async function loadAll() {
 
     renderAll();
     const t = new Date();
-    setSyncStatus("ok", `Sync OK à ${t.getHours()}h${String(t.getMinutes()).padStart(2,'0')} · ${data.length} enregistrement(s)`);
+    setSyncStatus("ok", `Sync OK à ${t.getHours()}h${String(t.getMinutes()).padStart(2,'0')} · ${data.length} ligne(s)`);
 
-  } catch(err) {
+  } catch (err) {
     setSyncStatus("err", "Erreur Google Sheets");
     document.getElementById("error-banner").style.display = "flex";
     document.getElementById("error-msg").innerHTML =
       '<strong>Impossible de charger les données.</strong><br>' +
-      '<span style="font-size:11px;opacity:0.8">' + err.message + '<br>' +
-      'Vérifiez que le script est redéployé avec accès "Tout le monde".</span>';
-    showToast("❌ " + err.message, "error");
+      '<span style="font-size:11px;opacity:0.8">' + err.message + '</span>';
+    showToast("❌ " + err.message.substring(0, 60), "error");
   }
 
   document.getElementById("sync-btn").classList.remove("spinning");
 }
 
 // ══════════════════════════════════════════════
-//  AJOUTER — écrit dans Google Sheets
+//  AJOUTER — via JSONP GET (pas de POST)
 // ══════════════════════════════════════════════
 async function addAbsence() {
   const salarie = document.getElementById("salarie-select").value;
   const du      = duEl.value;
   const au      = auEl.value;
   const motif   = document.getElementById("motif").value.trim();
-  if (!salarie) { showToast("⚠️ Sélectionner un salarié","error"); return; }
-  if (!du||!au) { showToast("⚠️ Renseigner les dates","error"); return; }
-  if (au < du)  { showToast("⚠️ Date de fin avant le début","error"); return; }
+
+  if (!salarie) { showToast("⚠️ Sélectionner un salarié", "error"); return; }
+  if (!du || !au) { showToast("⚠️ Renseigner les dates", "error"); return; }
+  if (au < du)    { showToast("⚠️ Date de fin avant le début", "error"); return; }
 
   const absence = {
     id:       Date.now().toString(),
     mois:     M0.key,
-    salarie, du, au,
+    salarie:  salarie,
+    du:       du,
+    au:       au,
     motif:    motif || "—",
     saisi_le: new Date().toLocaleDateString("fr-FR"),
   };
 
-  // ── Mise à jour optimiste : affichage immédiat ──
+  // Affichage immédiat (optimiste)
   abs0 = [...abs0, absence];
   renderAll();
   document.getElementById("salarie-select").value = "";
   document.getElementById("motif").value = "";
-  showToast("✅ Absence enregistrée !", "success");
 
   document.getElementById("btn-add").disabled = true;
   showLoader("Enregistrement dans Google Sheets…");
 
   try {
-    // On envoie à Sheets — on ne parse pas la réponse POST
-    // (Apps Script redirige, ce qui rend res.json() peu fiable)
-    await fetch(SCRIPT_URL, {
-      method: "POST",
-      body:   JSON.stringify({ action:"add", data: absence }),
+    const params = new URLSearchParams({
+      action:   "add",
+      id:       absence.id,
+      mois:     absence.mois,
+      salarie:  absence.salarie,
+      du:       absence.du,
+      au:       absence.au,
+      motif:    absence.motif,
+      saisi_le: absence.saisi_le,
     });
-  } catch(e) {
-    // Même en cas d'erreur réseau, on recharge pour confirmer
+    const result = await jsonpGet(SCRIPT_URL + '?' + params.toString());
+    if (result && result.error) throw new Error(result.error);
+    showToast("✅ Absence enregistrée !", "success");
+  } catch (e) {
+    showToast("⚠️ Erreur Sheets : " + e.message.substring(0, 50), "error");
   } finally {
-    // Rechargement systématique pour synchroniser avec Sheets
-    await loadAll();
+    await loadAll(); // Sync depuis Sheets pour confirmer
     hideLoader();
     document.getElementById("btn-add").disabled = false;
   }
 }
 
 // ══════════════════════════════════════════════
-//  SUPPRIMER — depuis Google Sheets
+//  SUPPRIMER — via JSONP GET
 // ══════════════════════════════════════════════
 async function removeAbsence(id) {
-  // Mise à jour optimiste : retrait immédiat de l'UI
+  // Retrait immédiat de l'UI
   abs0 = abs0.filter(a => a.id !== id);
   abs1 = abs1.filter(a => a.id !== id);
   abs2 = abs2.filter(a => a.id !== id);
@@ -466,11 +472,9 @@ async function removeAbsence(id) {
 
   showLoader("Suppression…");
   try {
-    await fetch(SCRIPT_URL, {
-      method: "POST",
-      body:   JSON.stringify({ action:"delete", id }),
-    });
-  } catch(e) {
+    const params = new URLSearchParams({ action: "delete", id: id });
+    await jsonpGet(SCRIPT_URL + '?' + params.toString());
+  } catch (e) {
     // on recharge quoi qu'il arrive
   } finally {
     await loadAll();

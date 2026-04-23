@@ -386,9 +386,6 @@ async function addAbsence() {
   if (!du||!au) { showToast("⚠️ Renseigner les dates","error"); return; }
   if (au < du)  { showToast("⚠️ Date de fin avant le début","error"); return; }
 
-  document.getElementById("btn-add").disabled = true;
-  showLoader("Enregistrement dans Google Sheets…");
-
   const absence = {
     id:       Date.now().toString(),
     mois:     M0.key,
@@ -397,47 +394,56 @@ async function addAbsence() {
     saisi_le: new Date().toLocaleDateString("fr-FR"),
   };
 
+  // ── Mise à jour optimiste : affichage immédiat ──
+  abs0 = [...abs0, absence];
+  renderAll();
+  document.getElementById("salarie-select").value = "";
+  document.getElementById("motif").value = "";
+  showToast("✅ Absence enregistrée !", "success");
+
+  document.getElementById("btn-add").disabled = true;
+  showLoader("Enregistrement dans Google Sheets…");
+
   try {
-    const res  = await fetch(SCRIPT_URL, {
+    // On envoie à Sheets — on ne parse pas la réponse POST
+    // (Apps Script redirige, ce qui rend res.json() peu fiable)
+    await fetch(SCRIPT_URL, {
       method: "POST",
       body:   JSON.stringify({ action:"add", data: absence }),
     });
-    const json = await res.json();
-    if (json.error) throw new Error(json.error);
-
-    // Recharger depuis Sheets pour être sûr
-    await loadAll();
-    document.getElementById("salarie-select").value = "";
-    document.getElementById("motif").value = "";
-    showToast("✅ Absence enregistrée !", "success");
-
   } catch(e) {
-    showToast("❌ Erreur : " + e.message, "error");
+    // Même en cas d'erreur réseau, on recharge pour confirmer
+  } finally {
+    // Rechargement systématique pour synchroniser avec Sheets
+    await loadAll();
+    hideLoader();
+    document.getElementById("btn-add").disabled = false;
   }
-
-  hideLoader();
-  document.getElementById("btn-add").disabled = false;
 }
 
 // ══════════════════════════════════════════════
 //  SUPPRIMER — depuis Google Sheets
 // ══════════════════════════════════════════════
 async function removeAbsence(id) {
+  // Mise à jour optimiste : retrait immédiat de l'UI
+  abs0 = abs0.filter(a => a.id !== id);
+  abs1 = abs1.filter(a => a.id !== id);
+  abs2 = abs2.filter(a => a.id !== id);
+  renderAll();
+
   showLoader("Suppression…");
   try {
-    const res  = await fetch(SCRIPT_URL, {
+    await fetch(SCRIPT_URL, {
       method: "POST",
       body:   JSON.stringify({ action:"delete", id }),
     });
-    const json = await res.json();
-    if (json.error) throw new Error(json.error);
-
+  } catch(e) {
+    // on recharge quoi qu'il arrive
+  } finally {
     await loadAll();
     showToast("🗑 Absence supprimée", "info");
-  } catch(e) {
-    showToast("❌ Erreur : " + e.message, "error");
+    hideLoader();
   }
-  hideLoader();
 }
 
 // ══════════════════════════════════════════════

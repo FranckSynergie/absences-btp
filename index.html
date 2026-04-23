@@ -59,14 +59,15 @@
     border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:#fca5a5;
     margin-bottom:12px;display:none;align-items:flex-start;gap:8px;line-height:1.5;}
 
-  .tabs{display:flex;gap:5px;margin-bottom:12px;}
-  .tab{flex:1;padding:8px 4px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;
-    font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);
-    background:var(--surface2);color:var(--text2);transition:all 0.15s;text-align:center;}
-  .tab.active{background:var(--accent);border-color:var(--accent);color:white;}
-  .tab .badge{display:inline-block;background:rgba(255,255,255,0.25);border-radius:10px;
-    padding:1px 6px;font-size:10px;margin-left:3px;}
-  .tab:not(.active) .badge{background:var(--surface);color:var(--text3);}
+  /* ── En-têtes de mois (remplace les onglets) ── */
+  .month-header-row{display:flex;align-items:center;gap:10px;margin:22px 0 8px;}
+  .month-label-pill{font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;
+    font-family:'DM Mono',monospace;flex-shrink:0;}
+  .m0-pill{background:rgba(249,115,22,.15);color:var(--accent);border:1px solid rgba(249,115,22,.35);}
+  .m1-pill{background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.35);}
+  .m2-pill{background:rgba(234,179,8,.15);color:#fde047;border:1px solid rgba(234,179,8,.35);}
+  .month-count{font-size:12px;color:var(--text3);}
+  .month-count strong{color:var(--text2);}
 
   .sync-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);margin-bottom:10px;}
   .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;}
@@ -240,37 +241,33 @@
     </div>
   </div>
 
-  <p class="section-title">Récapitulatif 3 mois</p>
+  <p class="section-title">Récapitulatif des absences saisies</p>
 
-  <div class="tabs">
-    <div class="tab active" id="tab-m"     onclick="switchTab('m')">
-      <span id="tab-m-label">—</span><span class="badge" id="badge-m">0</span>
-    </div>
-    <div class="tab" id="tab-p1" onclick="switchTab('p1')">
-      <span id="tab-p1-label">—</span><span class="badge" id="badge-p1">0</span>
-    </div>
-    <div class="tab" id="tab-p2" onclick="switchTab('p2')">
-      <span id="tab-p2-label">—</span><span class="badge" id="badge-p2">0</span>
-    </div>
+  <div class="sync-status">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-label">Chargement…</span>
   </div>
 
-  <div id="panel-m">
-    <div class="sync-status">
-      <div class="sync-dot" id="sync-dot"></div>
-      <span id="sync-label">Chargement…</span>
-    </div>
-    <div class="card"><div id="absence-list"></div></div>
+  <!-- M0 — mois en cours (saisie active) -->
+  <div class="month-header-row">
+    <div class="month-label-pill m0-pill" id="tab-m-label">—</div>
+    <div class="month-count"><strong id="badge-m">0</strong> absence(s) ce mois</div>
   </div>
+  <div class="card" style="margin-bottom:4px"><div id="absence-list"></div></div>
 
-  <div id="panel-p1" style="display:none">
-    <div class="readonly-notice blue">ℹ️ M-1 — lecture seule</div>
-    <div class="card"><div id="absence-list-prev"></div></div>
+  <!-- M-1 — lecture seule -->
+  <div class="month-header-row">
+    <div class="month-label-pill m1-pill" id="tab-p1-label">—</div>
+    <div class="month-count"><strong id="badge-p1">0</strong> absence(s) · lecture seule</div>
   </div>
+  <div class="card" style="margin-bottom:4px"><div id="absence-list-prev"></div></div>
 
-  <div id="panel-p2" style="display:none">
-    <div class="readonly-notice yellow">⚠️ M-2 — lecture seule</div>
-    <div class="card"><div id="absence-list-prev2"></div></div>
+  <!-- M-2 — lecture seule -->
+  <div class="month-header-row">
+    <div class="month-label-pill m2-pill" id="tab-p2-label">—</div>
+    <div class="month-count"><strong id="badge-p2">0</strong> absence(s) · lecture seule</div>
   </div>
+  <div class="card"><div id="absence-list-prev2"></div></div>
 
 </main>
 
@@ -445,15 +442,7 @@ async function removeAbsence(id) {
 
 // ══════════════════════════════════════════════
 //  ONGLETS
-// ══════════════════════════════════════════════
-function switchTab(tab) {
-  const map = { m:"panel-m", p1:"panel-p1", p2:"panel-p2" };
-  ["m","p1","p2"].forEach(t => {
-    document.getElementById(`tab-${t}`).classList.toggle("active", t===tab);
-    document.getElementById(map[t]).style.display = t===tab ? "" : "none";
-  });
-  document.getElementById("saisie-block").style.display = tab==="m" ? "" : "none";
-}
+// switchTab supprimé — les 3 mois sont toujours visibles
 
 // ══════════════════════════════════════════════
 //  RENDU
@@ -484,7 +473,11 @@ function renderAll() {
   document.getElementById("badge-p1").textContent = abs1.length;
   document.getElementById("badge-p2").textContent = abs2.length;
   const total = abs0.length + abs1.length + abs2.length;
-  document.getElementById("btn-send").disabled = total === 0;
+  const btnSend = document.getElementById("btn-send");
+  btnSend.disabled = total === 0;
+  btnSend.textContent = total > 0
+    ? `📨 Envoyer le récap (${total} absence${total>1?"s":""})`
+    : "📨 Envoyer le récap";
   renderSection("absence-list",       abs0, true,  "");
   renderSection("absence-list-prev",  abs1, false, "m1");
   renderSection("absence-list-prev2", abs2, false, "m2");
@@ -534,18 +527,29 @@ async function sendReport() {
   document.getElementById("btn-send").disabled = true;
   showLoader("Envoi en cours…");
 
+  const sep   = "─────────────────────────────────────";
   const ligne = (list, label) => {
-    if (!list.length) return `${label} : aucune absence\n`;
-    return `${label} (${list.length} absence(s)) :\n` +
-      list.map(a => `  • ${a.salarie} : du ${fmt(a.du)} au ${fmt(a.au)} — ${a.motif}`).join("\n") + "\n";
+    if (!list.length) return `${label} : aucune absence enregistrée\n`;
+    return `${label} — ${list.length} absence(s) :\n` +
+      list.map(a => `  • ${a.salarie}\n    Du ${fmt(a.du)} au ${fmt(a.au)}  |  ${a.motif}`).join("\n") + "\n";
   };
 
+  const recap =
+    `${sep}\n` +
+    `${ligne(abs0, M0.label)}\n` +
+    `${sep}\n` +
+    `${ligne(abs1, M1.label)}\n` +
+    `${sep}\n` +
+    `${ligne(abs2, M2.label)}\n` +
+    `${sep}\n\n` +
+    `Total : ${abs0.length} (${M0.label}) + ${abs1.length} (${M1.label}) + ${abs2.length} (${M2.label}) = ${total} absence(s)`;
+
   const payload = {
-    subject:        `Absences ${M0.label} / ${M1.label} / ${M2.label} — Synergie BTP`,
+    subject:        `Récap Absences ${M0.label} / ${M1.label} / ${M2.label} — Synergie BTP`,
     month:          `${M0.label} / ${M1.label} / ${M2.label}`,
     date_envoi:     new Date().toLocaleDateString("fr-FR"),
-    nb_absences:    `${abs0.length} (M) + ${abs1.length} (M-1) + ${abs2.length} (M-2)`,
-    liste_absences: ligne(abs0,M0.label) + "\n" + ligne(abs1,M1.label) + "\n" + ligne(abs2,M2.label),
+    nb_absences:    `${total} au total (${abs0.length} + ${abs1.length} + ${abs2.length})`,
+    liste_absences: recap,
   };
 
   const results = await Promise.allSettled(

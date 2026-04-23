@@ -293,7 +293,7 @@
 // ══════════════════════════════════════════════
 //  CONFIG — ne pas modifier
 // ══════════════════════════════════════════════
-const SCRIPT_URL          = "https://script.google.com/macros/s/AKfycbxHIwp63NxV-Db1YwsRpfRtNngBshpkwS5Xti3GvH0QbioaING17axhmwmO44nj_tVm2Q/exec";
+const SCRIPT_URL          = "https://script.google.com/macros/s/AKfycbyyo0xyVdBszKpqYqIh3NsZMNCPN_tdklOibjXtIbS5vX928S8A_YvfzslXCfDiz53oDA/exec";
 const EMAILJS_PUBLIC_KEY  = "9cpxDjEG1jXr_0dcv";
 const EMAILJS_SERVICE_ID  = "service_bvmanla";
 const EMAILJS_TEMPLATE_ID = "template_lky1ji7";
@@ -388,6 +388,19 @@ async function loadAll() {
 
     if (data && data.error) throw new Error(data.error);
     if (!Array.isArray(data)) throw new Error("Réponse inattendue : " + JSON.stringify(data).substring(0, 80));
+
+    // Filet de sécurité : normalise le champ "mois" si Sheets a renvoyé
+    // une date longue ("Wed Apr 01 2026...") au lieu de "2026-04"
+    data.forEach(function(r) {
+      if (r.mois && !/^\d{4}-\d{2}$/.test(r.mois)) {
+        try {
+          const d = new Date(r.mois);
+          if (!isNaN(d.getTime())) {
+            r.mois = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
+          }
+        } catch(e) {}
+      }
+    });
 
     abs0 = data.filter(r => r.mois === M0.key);
     abs1 = data.filter(r => r.mois === M1.key);
@@ -497,8 +510,19 @@ async function removeAbsence(id) {
 // ══════════════════════════════════════════════
 function fmt(d) {
   if (!d) return "—";
-  const [y,m,j] = d.split("-");
-  return `${j}/${m}/${y}`;
+  // Format standard YYYY-MM-DD (envoyé par le formulaire)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+    const [y,m,j] = d.split("-");
+    return `${j}/${m}/${y}`;
+  }
+  // Filet de sécurité : date longue auto-convertie par Sheets ("Wed Apr 15 2026...")
+  try {
+    const dt = new Date(d);
+    if (!isNaN(dt.getTime())) {
+      return dt.toLocaleDateString("fr-FR", {day:"2-digit", month:"2-digit", year:"numeric"});
+    }
+  } catch(e) {}
+  return d;
 }
 
 function renderSection(id, data, canDelete, cls="") {

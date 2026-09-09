@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Absences — Synergie BTP</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3248;
@@ -22,15 +22,8 @@
     display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:white;flex-shrink:0;}
   .header-text h1{font-size:16px;font-weight:600;}
   .header-text p{font-size:12px;color:var(--text2);margin-top:1px;}
-  .header-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
-  .month-badge{background:var(--surface2);border:1px solid var(--border);border-radius:20px;
-    padding:4px 12px;font-size:12px;color:var(--accent);font-weight:500;font-family:'DM Mono',monospace;}
-  .sync-btn{background:none;border:1px solid var(--border);border-radius:8px;
-    color:var(--text2);padding:5px 10px;font-size:13px;cursor:pointer;transition:all 0.15s;}
-  .sync-btn.spinning{animation:spin 1s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg);}}
 
-  .main{padding:20px 16px 120px;max-width:600px;margin:0 auto;}
+  .main{padding:20px 16px 40px;max-width:600px;margin:0 auto;}
   .section-title{font-size:11px;font-weight:600;letter-spacing:1.2px;
     text-transform:uppercase;color:var(--text3);margin:24px 0 10px;}
   .card{background:var(--surface);border:1px solid var(--border);
@@ -41,6 +34,7 @@
     border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;
     font-size:15px;padding:12px 14px;outline:none;appearance:none;-webkit-appearance:none;
     transition:border-color 0.15s;}
+  select:disabled{opacity:0.5;}
   select:focus,input[type="text"]:focus{border-color:var(--accent);}
   select option{background:#1a1d27;}
   .select-wrap{position:relative;}
@@ -54,49 +48,9 @@
     transition:border-color 0.15s;color-scheme:dark;}
   input[type="date"]:focus{border-color:var(--accent);}
 
-  /* Bannière erreur connexion */
   .error-banner{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.4);
     border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:#fca5a5;
     margin-bottom:12px;display:none;align-items:flex-start;gap:8px;line-height:1.5;}
-
-  /* ── En-têtes de mois (remplace les onglets) ── */
-  .month-header-row{display:flex;align-items:center;gap:10px;margin:22px 0 8px;}
-  .month-label-pill{font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;
-    font-family:'DM Mono',monospace;flex-shrink:0;}
-  .m0-pill{background:rgba(249,115,22,.15);color:var(--accent);border:1px solid rgba(249,115,22,.35);}
-  .m1-pill{background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.35);}
-  .m2-pill{background:rgba(234,179,8,.15);color:#fde047;border:1px solid rgba(234,179,8,.35);}
-  .month-count{font-size:12px;color:var(--text3);}
-  .month-count strong{color:var(--text2);}
-
-  .sync-status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3);margin-bottom:10px;}
-  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;}
-  .sync-dot.ok{background:var(--success);}
-  .sync-dot.busy{background:var(--accent);animation:pulse 1s infinite;}
-  .sync-dot.err{background:var(--error);}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-
-  #absence-list,#absence-list-prev,#absence-list-prev2{display:flex;flex-direction:column;gap:8px;}
-  .absence-item{background:var(--surface2);border:1px solid var(--border);
-    border-radius:var(--radius-sm);padding:12px 14px;
-    display:flex;align-items:center;gap:10px;animation:slideIn 0.2s ease;}
-  .absence-item.m1{border-left:3px solid var(--info);}
-  .absence-item.m2{border-left:3px solid var(--warn);}
-  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-  .absence-item .name{font-weight:600;font-size:14px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .absence-item .dates{font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;white-space:nowrap;}
-  .absence-item .motif-tag{font-size:11px;color:var(--accent2);background:rgba(251,146,60,0.12);
-    border-radius:4px;padding:2px 7px;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis;}
-  .btn-remove{background:none;border:none;color:var(--text3);cursor:pointer;
-    font-size:16px;padding:2px 4px;border-radius:4px;transition:color 0.15s;flex-shrink:0;}
-  .btn-remove:hover{color:var(--error);}
-  .empty-state{text-align:center;padding:28px;color:var(--text3);font-size:14px;}
-  .empty-state .icon{font-size:28px;margin-bottom:8px;}
-
-  .readonly-notice{display:flex;align-items:center;gap:8px;
-    border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;margin-bottom:12px;}
-  .readonly-notice.blue{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;}
-  .readonly-notice.yellow{background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);color:#fde047;}
 
   .btn-add{width:100%;background:var(--accent);border:none;border-radius:var(--radius-sm);
     color:white;font-family:'DM Sans',sans-serif;font-weight:600;font-size:15px;
@@ -105,19 +59,19 @@
   .btn-add:active{transform:scale(0.98);}
   .btn-add:disabled{background:var(--surface2);color:var(--text3);cursor:not-allowed;}
 
-  .bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);
-    border-top:1px solid var(--border);padding:10px 16px;
-    padding-bottom:calc(10px + env(safe-area-inset-bottom));
-    display:flex;gap:8px;max-width:600px;margin:0 auto;}
-  .btn-preview{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
-    color:var(--text);font-family:'DM Sans',sans-serif;font-weight:500;
-    font-size:14px;padding:13px 14px;cursor:pointer;white-space:nowrap;}
-  .btn-send{flex:1;background:var(--accent);border:none;border-radius:var(--radius-sm);
-    color:white;font-family:'DM Sans',sans-serif;font-weight:600;font-size:15px;
-    padding:13px;cursor:pointer;transition:background 0.15s,transform 0.1s;
-    display:flex;align-items:center;justify-content:center;gap:6px;}
-  .btn-send:active{transform:scale(0.98);}
-  .btn-send:disabled{background:var(--surface2);color:var(--text3);cursor:not-allowed;}
+  #session-list{display:flex;flex-direction:column;gap:8px;}
+  .absence-item{background:var(--surface2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:12px 14px;
+    display:flex;align-items:center;gap:10px;animation:slideIn 0.2s ease;}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .absence-item .name{font-weight:600;font-size:14px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .absence-item .dates{font-size:12px;color:var(--text2);font-family:'DM Mono',monospace;white-space:nowrap;}
+  .absence-item .motif-tag{font-size:11px;color:var(--accent2);background:rgba(251,146,60,0.12);
+    border-radius:4px;padding:2px 7px;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis;}
+  .absence-item .status-tag{font-size:11px;color:#4ade80;background:rgba(34,197,94,0.12);
+    border-radius:4px;padding:2px 7px;white-space:nowrap;flex-shrink:0;}
+  .empty-state{text-align:center;padding:28px;color:var(--text3);font-size:14px;}
+  .empty-state .icon{font-size:28px;margin-bottom:8px;}
 
   .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);
     background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
@@ -129,38 +83,12 @@
   .toast.error{border-color:var(--error);}
   .toast.info{border-color:var(--info);}
 
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
-    z-index:200;align-items:flex-end;justify-content:center;}
-  .modal-overlay.open{display:flex;}
-  .modal{background:var(--surface);border-radius:20px 20px 0 0;border:1px solid var(--border);
-    border-bottom:none;padding:20px 20px calc(20px + env(safe-area-inset-bottom));
-    width:100%;max-width:600px;max-height:85vh;overflow-y:auto;animation:slideUp 0.25s ease;}
-  @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
-  .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px;}
-  .modal h2{font-size:16px;font-weight:600;margin-bottom:16px;}
-
-  .pdf-preview{background:white;border-radius:var(--radius-sm);padding:20px;color:#1a1a2e;}
-  .pdf-preview h3{font-size:13px;color:#1F4E79;border-bottom:2px solid #f97316;padding-bottom:6px;margin:14px 0 8px;}
-  .pdf-preview h3:first-child{margin-top:0;}
-  .pdf-preview h3.s1{color:#2563eb;border-bottom-color:#3b82f6;}
-  .pdf-preview h3.s2{color:#b45309;border-bottom-color:#eab308;}
-  .pdf-preview .meta{font-size:11px;color:#666;margin-bottom:14px;}
-  .pdf-preview table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:8px;}
-  .pdf-preview th{background:#1F4E79;color:white;padding:7px 8px;text-align:left;}
-  .pdf-preview td{padding:6px 8px;border-bottom:1px solid #e5e7eb;}
-  .pdf-preview tr:nth-child(even) td{background:#f8f9fa;}
-
-  .modal-actions{display:flex;gap:10px;margin-top:16px;}
-  .btn-modal{flex:1;padding:13px;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;
-    font-weight:600;font-size:14px;cursor:pointer;border:none;}
-  .btn-modal.primary{background:var(--accent);color:white;}
-  .btn-modal.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
-
   .loader-overlay{display:none;position:fixed;inset:0;background:rgba(15,17,23,0.8);
     z-index:300;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
   .loader-overlay.open{display:flex;}
   .spinner{width:36px;height:36px;border:3px solid var(--border);
     border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
   .loader-msg{font-size:14px;color:var(--text2);}
 </style>
 </head>
@@ -169,523 +97,203 @@
 <div class="toast" id="toast"></div>
 <div class="loader-overlay" id="loader">
   <div class="spinner"></div>
-  <div class="loader-msg" id="loader-msg">Chargement…</div>
+  <div class="loader-msg" id="loader-msg">Enregistrement…</div>
 </div>
 
 <header class="header">
   <div class="logo">SB</div>
   <div class="header-text">
     <h1>Synergie BTP</h1>
-    <p>Saisie des absences</p>
-  </div>
-  <div class="header-right">
-    <button class="sync-btn" id="sync-btn" onclick="loadAll()" title="Actualiser">↻</button>
-    <div class="month-badge" id="month-badge"></div>
+    <p>Signaler une absence</p>
   </div>
 </header>
 
 <main class="main">
 
-  <!-- Bannière erreur -->
   <div class="error-banner" id="error-banner">
-    ❌ <div style="flex:1"><span id="error-msg">Impossible de contacter Google Sheets.</span></div>
-    <button onclick="loadAll()" style="background:var(--error);border:none;color:white;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif;font-weight:600;">↺ Réessayer</button>
+    ❌ <div style="flex:1"><span id="error-msg">Impossible de charger la liste des salariés.</span></div>
+    <button onclick="loadEmployees()" style="background:var(--error);border:none;color:white;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif;font-weight:600;">↺ Réessayer</button>
   </div>
 
-  <div id="saisie-block">
-    <p class="section-title">Nouvelle absence</p>
-    <div class="card">
-      <label class="field-label">Salarié</label>
-      <div class="select-wrap">
-        <select id="salarie-select">
-          <option value="">— Choisir un salarié —</option>
-          <option>ANATOL Jérôme</option>
-          <option>ANATOL Wilson Tin</option>
-          <option>ANATOLE Elvise</option>
-          <option>ASSELIN Franck</option>
-          <option>BIANAY Moïse</option>
-          <option>ELIEN Celestin</option>
-          <option>AUGUSTE Ezechiel</option>
-          <option>FERGA Stracy</option>
-          <option>FERRAND Swann</option>
-          <option>JABES Jacob</option>
-          <option>JOSEPH Jonel</option>
-          <option>JUSTIN Jocelyn</option>
-          <option>KUSTHARDT Morganne</option>
-          <option>LAUJIN Rudy</option>
-          <option>LEWIS Roméo</option>
-          <option>LIGNIERES Alexandre</option>
-          <option>LIGNIERES Constantin</option>
-          <option>MADASAIB Jonathan</option>
-          <option>MARCEL Rémi</option>
-          <option>MICHEL Esner</option>
-          <option>NESTY James</option>
-          <option>PERRAN Mickaël</option>
-          <option>PERROT Jean Yves</option>
-          <option>PHIBEL Willy</option>
-          <option>SAINTE MARIE Ramon</option>
-          <option>VARELA ROMAN Nelson</option>
-          <option>ZOUGOULA Philippe</option>
-        </select>
-      </div>
-      <div class="date-row">
-        <div class="date-field"><label>Du</label><input type="date" id="date-du"></div>
-        <div class="date-field"><label>Au</label><input type="date" id="date-au"></div>
-      </div>
-      <div style="margin-top:12px">
-        <label class="field-label">Motif</label>
-        <input type="text" id="motif" placeholder="Ex: Maladie, Congés, AT…">
-      </div>
-      <button class="btn-add" id="btn-add" onclick="addAbsence()">
-        <span style="font-size:18px">+</span> Enregistrer l'absence
-      </button>
+  <p class="section-title">Nouvelle absence</p>
+  <div class="card">
+    <label class="field-label">Salarié</label>
+    <div class="select-wrap">
+      <select id="salarie-select" disabled>
+        <option value="">Chargement…</option>
+      </select>
     </div>
+    <div class="date-row">
+      <div class="date-field"><label>Du</label><input type="date" id="date-du"></div>
+      <div class="date-field"><label>Au</label><input type="date" id="date-au"></div>
+    </div>
+    <div style="margin-top:12px">
+      <label class="field-label">Motif</label>
+      <input type="text" id="motif" placeholder="Ex: Maladie, Congés, AT…">
+    </div>
+    <button class="btn-add" id="btn-add" onclick="addAbsence()" disabled>
+      <span style="font-size:18px">+</span> Enregistrer l'absence
+    </button>
   </div>
 
-  <p class="section-title">Récapitulatif des absences saisies</p>
-
-  <div class="sync-status">
-    <div class="sync-dot" id="sync-dot"></div>
-    <span id="sync-label">Chargement…</span>
-  </div>
-
-  <!-- M0 — mois en cours (saisie active) -->
-  <div class="month-header-row">
-    <div class="month-label-pill m0-pill" id="tab-m-label">—</div>
-    <div class="month-count"><strong id="badge-m">0</strong> absence(s) ce mois</div>
-  </div>
-  <div class="card" style="margin-bottom:4px"><div id="absence-list"></div></div>
-
-  <!-- M-1 — lecture seule -->
-  <div class="month-header-row">
-    <div class="month-label-pill m1-pill" id="tab-p1-label">—</div>
-    <div class="month-count"><strong id="badge-p1">0</strong> absence(s) · lecture seule</div>
-  </div>
-  <div class="card" style="margin-bottom:4px"><div id="absence-list-prev"></div></div>
-
-  <!-- M-2 — lecture seule -->
-  <div class="month-header-row">
-    <div class="month-label-pill m2-pill" id="tab-p2-label">—</div>
-    <div class="month-count"><strong id="badge-p2">0</strong> absence(s) · lecture seule</div>
-  </div>
-  <div class="card"><div id="absence-list-prev2"></div></div>
+  <p class="section-title">Signalées à l'instant</p>
+  <div class="card"><div id="session-list"></div></div>
 
 </main>
-
-<div class="bottom-bar">
-  <button class="btn-preview" onclick="openPreview()">👁 Aperçu</button>
-  <button class="btn-send" id="btn-send" onclick="sendReport()" disabled>📨 Envoyer le récap</button>
-</div>
-
-<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2 id="modal-title">Aperçu</h2>
-    <div id="modal-body"></div>
-    <div class="modal-actions">
-      <button class="btn-modal secondary" onclick="document.getElementById('modal-overlay').classList.remove('open')">Fermer</button>
-      <button class="btn-modal primary" onclick="sendReport();document.getElementById('modal-overlay').classList.remove('open')">📨 Envoyer</button>
-    </div>
-  </div>
-</div>
 
 <script>
 // ══════════════════════════════════════════════
 //  CONFIG — ne pas modifier
+//  Écrit directement dans la base du portail Social : l'absence apparaît
+//  aussitôt comme notification "à valider" dans le tableau de bord de
+//  Morgane (Congés + Variables de paie sont mis à jour au moment où elle
+//  la valide, pas avant).
 // ══════════════════════════════════════════════
-const SCRIPT_URL          = "https://script.google.com/macros/s/AKfycbyyo0xyVdBszKpqYqIh3NsZMNCPN_tdklOibjXtIbS5vX928S8A_YvfzslXCfDiz53oDA/exec";
-const EMAILJS_PUBLIC_KEY  = "9cpxDjEG1jXr_0dcv";
-const EMAILJS_SERVICE_ID  = "service_bvmanla";
-const EMAILJS_TEMPLATE_ID = "template_lky1ji7";
-const DEST_EMAILS         = ["synergiebtp971@gmail.com", "mk.synergiebtp@gmail.com"];
+const SUPABASE_URL = "https://mtngptrrjxuyzyiwhuum.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10bmdwdHJyanh1eXp5aXdodXVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDY1NTksImV4cCI6MjEwNDI4MjU1OX0.6qtLFfeqSkvbtkTFlJZvwKpzwXs2hVlzeXMhChxMAyE";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ══════════════════════════════════════════════
-//  DATES
+//  DATES — valeur par défaut : aujourd'hui
 // ══════════════════════════════════════════════
-const MONTHS_FR = ["Janvier","Février","Mars","Avril","Mai","Juin",
-                   "Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
-const now = new Date();
-
-function calcMonth(offset) {
-  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-  return {
-    key:   `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
-    label: `${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`,
-  };
-}
-
-const M0 = calcMonth(0);
-const M1 = calcMonth(-1);
-const M2 = calcMonth(-2);
-
-document.getElementById("month-badge").textContent    = M0.label;
-document.getElementById("tab-m-label").textContent    = M0.label;
-document.getElementById("tab-p1-label").textContent   = M1.label;
-document.getElementById("tab-p2-label").textContent   = M2.label;
-
-const minDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
-const maxDate = new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString().split("T")[0];
+const todayStr = new Date().toISOString().split("T")[0];
 const duEl = document.getElementById("date-du");
 const auEl = document.getElementById("date-au");
-duEl.min = auEl.min = minDate;
-duEl.max = auEl.max = maxDate;
-duEl.value = auEl.value = minDate;
-duEl.addEventListener("change", function() {
+duEl.value = auEl.value = todayStr;
+duEl.addEventListener("change", function () {
   if (auEl.value < this.value) auEl.value = this.value;
   auEl.min = this.value;
 });
 
 // ══════════════════════════════════════════════
-//  ÉTAT
+//  LISTE DES SALARIÉS ACTIFS — lue en direct depuis le portail
 // ══════════════════════════════════════════════
-let abs0=[], abs1=[], abs2=[];
+let employees = [];
 
-// ══════════════════════════════════════════════
-//  CHARGEMENT depuis Google Sheets
-//  C'est la SEULE source de vérité
-// ══════════════════════════════════════════════
-// ══════════════════════════════════════════════
-//  JSONP — contourne CORS et redirections Apps Script
-//  Toutes les opérations (lecture, ajout, suppression) passent par ici
-// ══════════════════════════════════════════════
-function jsonpGet(url) {
-  return new Promise(function(resolve, reject) {
-    var cb    = 'gscb_' + Date.now();
-    var s     = document.createElement('script');
-    var timer = setTimeout(function() {
-      cleanup();
-      reject(new Error('Timeout — Apps Script ne répond pas (>15s)'));
-    }, 15000);
-
-    function cleanup() {
-      clearTimeout(timer);
-      delete window[cb];
-      if (s.parentNode) s.parentNode.removeChild(s);
-    }
-
-    window[cb] = function(data) { cleanup(); resolve(data); };
-    s.onerror  = function()     { cleanup(); reject(new Error('Script introuvable — vérifiez l\'URL Apps Script')); };
-
-    // Le callback et le cache-buster sont ajoutés en fin d'URL
-    s.src = url + '&callback=' + cb + '&t=' + Date.now();
-    document.head.appendChild(s);
-  });
-}
-
-// ══════════════════════════════════════════════
-//  CHARGEMENT depuis Google Sheets
-// ══════════════════════════════════════════════
-async function loadAll() {
-  // Affiche le loader complet uniquement si le récap est encore vide (premier chargement)
-  const isFirstLoad = abs0.length + abs1.length + abs2.length === 0;
-  if (isFirstLoad) showLoader("Chargement des absences…");
-  setSyncStatus("busy", "Chargement…");
-  document.getElementById("sync-btn").classList.add("spinning");
+async function loadEmployees() {
+  const sel = document.getElementById("salarie-select");
+  const btn = document.getElementById("btn-add");
   document.getElementById("error-banner").style.display = "none";
+  sel.disabled = true;
+  btn.disabled = true;
+  sel.innerHTML = '<option value="">Chargement…</option>';
 
-  try {
-    const data = await jsonpGet(SCRIPT_URL + '?action=get');
+  const { data, error } = await sb.from("public_active_employees").select("id,nom,prenom").order("nom");
 
-    if (data && data.error) throw new Error(data.error);
-    if (!Array.isArray(data)) throw new Error("Réponse inattendue : " + JSON.stringify(data).substring(0, 80));
-
-    // Filet de sécurité : normalise le champ "mois" si Sheets a renvoyé
-    // une date longue ("Wed Apr 01 2026...") au lieu de "2026-04"
-    data.forEach(function(r) {
-      if (r.mois && !/^\d{4}-\d{2}$/.test(r.mois)) {
-        try {
-          const d = new Date(r.mois);
-          if (!isNaN(d.getTime())) {
-            r.mois = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
-          }
-        } catch(e) {}
-      }
-    });
-
-    abs0 = data.filter(r => r.mois === M0.key);
-    abs1 = data.filter(r => r.mois === M1.key);
-    abs2 = data.filter(r => r.mois === M2.key);
-
-    renderAll();
-    const t = new Date();
-    setSyncStatus("ok", `Sync OK à ${t.getHours()}h${String(t.getMinutes()).padStart(2,'0')} · ${data.length} ligne(s)`);
-
-  } catch (err) {
-    setSyncStatus("err", "Erreur Google Sheets");
+  if (error || !data) {
     document.getElementById("error-banner").style.display = "flex";
-    document.getElementById("error-msg").innerHTML =
-      '<strong>Impossible de charger les données.</strong><br>' +
-      '<span style="font-size:11px;opacity:0.8">' + err.message + '</span>';
-    showToast("❌ " + err.message.substring(0, 60), "error");
+    document.getElementById("error-msg").textContent =
+      "Impossible de charger la liste des salariés. Vérifiez votre connexion.";
+    sel.innerHTML = '<option value="">— Indisponible —</option>';
+    return;
   }
 
-  document.getElementById("sync-btn").classList.remove("spinning");
-  hideLoader();
+  employees = data;
+  sel.innerHTML =
+    '<option value="">— Choisir un salarié —</option>' +
+    data.map((e) => `<option value="${e.id}">${e.nom} ${e.prenom}</option>`).join("");
+  sel.disabled = false;
+  btn.disabled = false;
 }
 
 // ══════════════════════════════════════════════
-//  AJOUTER — via JSONP GET (pas de POST)
+//  ENVOI — écriture directe dans absence_reports
+//  (statut "en_attente" : Morgane valide ensuite depuis le portail)
 // ══════════════════════════════════════════════
+let sessionList = [];
+
 async function addAbsence() {
-  const salarie = document.getElementById("salarie-select").value;
-  const du      = duEl.value;
-  const au      = auEl.value;
-  const motif   = document.getElementById("motif").value.trim();
+  const sel = document.getElementById("salarie-select");
+  const employeeId = sel.value;
+  const salarieNom = sel.options[sel.selectedIndex]?.text || "";
+  const du = duEl.value;
+  const au = auEl.value;
+  const motifEl = document.getElementById("motif");
+  const motif = motifEl.value.trim();
 
-  if (!salarie) { showToast("⚠️ Sélectionner un salarié", "error"); return; }
+  if (!employeeId) { showToast("⚠️ Sélectionner un salarié", "error"); return; }
   if (!du || !au) { showToast("⚠️ Renseigner les dates", "error"); return; }
-  if (au < du)    { showToast("⚠️ Date de fin avant le début", "error"); return; }
-
-  const absence = {
-    id:       Date.now().toString(),
-    mois:     M0.key,
-    salarie:  salarie,
-    du:       du,
-    au:       au,
-    motif:    motif || "—",
-    saisi_le: new Date().toLocaleDateString("fr-FR"),
-  };
-
-  // Affichage immédiat (optimiste)
-  abs0 = [...abs0, absence];
-  renderAll();
-  document.getElementById("salarie-select").value = "";
-  document.getElementById("motif").value = "";
+  if (au < du) { showToast("⚠️ Date de fin avant le début", "error"); return; }
 
   document.getElementById("btn-add").disabled = true;
-  showLoader("Enregistrement dans Google Sheets…");
+  showLoader("Enregistrement…");
 
-  try {
-    const params = new URLSearchParams({
-      action:   "add",
-      id:       absence.id,
-      mois:     absence.mois,
-      salarie:  absence.salarie,
-      du:       absence.du,
-      au:       absence.au,
-      motif:    absence.motif,
-      saisi_le: absence.saisi_le,
-    });
-    const result = await jsonpGet(SCRIPT_URL + '?' + params.toString());
-    if (result && result.error) throw new Error(result.error);
-    showToast("✅ Absence enregistrée !", "success");
-  } catch (e) {
-    showToast("⚠️ Erreur Sheets : " + e.message.substring(0, 50), "error");
-  } finally {
-    await loadAll(); // Sync depuis Sheets pour confirmer
-    hideLoader();
-    document.getElementById("btn-add").disabled = false;
+  // Important : ne PAS chaîner .select() ici — la page n'a pas le droit de
+  // relire la ligne (seule Morgane, connectée, peut la lire), et demander sa
+  // relecture ferait échouer l'insertion (RETURNING est soumis à la même
+  // politique de sécurité que la lecture).
+  const { error } = await sb.from("absence_reports").insert({
+    employee_id: employeeId,
+    salarie_saisi: salarieNom,
+    date_debut: du,
+    date_fin: au,
+    motif: motif || null,
+  });
+
+  hideLoader();
+  document.getElementById("btn-add").disabled = false;
+
+  if (error) {
+    showToast("❌ Erreur : " + error.message.substring(0, 60), "error");
+    return;
   }
+
+  sessionList = [{ salarie: salarieNom, du, au, motif: motif || "—" }, ...sessionList];
+  renderSessionList();
+  motifEl.value = "";
+  sel.value = "";
+  showToast("✅ Absence signalée — à valider par Morgane", "success");
 }
-
-// ══════════════════════════════════════════════
-//  SUPPRIMER — via JSONP GET
-// ══════════════════════════════════════════════
-async function removeAbsence(id) {
-  // Retrait immédiat de l'UI
-  abs0 = abs0.filter(a => a.id !== id);
-  abs1 = abs1.filter(a => a.id !== id);
-  abs2 = abs2.filter(a => a.id !== id);
-  renderAll();
-
-  showLoader("Suppression…");
-  try {
-    const params = new URLSearchParams({ action: "delete", id: id });
-    await jsonpGet(SCRIPT_URL + '?' + params.toString());
-  } catch (e) {
-    // on recharge quoi qu'il arrive
-  } finally {
-    await loadAll();
-    showToast("🗑 Absence supprimée", "info");
-    hideLoader();
-  }
-}
-
-// ══════════════════════════════════════════════
-//  ONGLETS
-// switchTab supprimé — les 3 mois sont toujours visibles
 
 // ══════════════════════════════════════════════
 //  RENDU
 // ══════════════════════════════════════════════
 function fmt(d) {
   if (!d) return "—";
-  // Format standard YYYY-MM-DD (envoyé par le formulaire)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-    const [y,m,j] = d.split("-");
-    return `${j}/${m}/${y}`;
-  }
-  // Filet de sécurité : date longue auto-convertie par Sheets ("Wed Apr 15 2026...")
-  try {
-    const dt = new Date(d);
-    if (!isNaN(dt.getTime())) {
-      return dt.toLocaleDateString("fr-FR", {day:"2-digit", month:"2-digit", year:"numeric"});
-    }
-  } catch(e) {}
-  return d;
+  const [y, m, j] = d.split("-");
+  return `${j}/${m}/${y}`;
 }
 
-function renderSection(id, data, canDelete, cls="") {
-  const el = document.getElementById(id);
-  if (!data.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">📋</div>Aucune absence enregistrée</div>`;
+function renderSessionList() {
+  const el = document.getElementById("session-list");
+  if (!sessionList.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📋</div>Rien signalé pour l'instant dans cette session</div>`;
     return;
   }
-  el.innerHTML = data.map(a => `
-    <div class="absence-item ${cls}">
+  el.innerHTML = sessionList
+    .map(
+      (a) => `
+    <div class="absence-item">
       <div class="name">${a.salarie}</div>
       <div class="dates">${fmt(a.du)} → ${fmt(a.au)}</div>
       <div class="motif-tag">${a.motif}</div>
-      ${canDelete ? `<button class="btn-remove" onclick="removeAbsence('${a.id}')">✕</button>` : ""}
-    </div>`).join("");
-}
-
-function renderAll() {
-  document.getElementById("badge-m").textContent  = abs0.length;
-  document.getElementById("badge-p1").textContent = abs1.length;
-  document.getElementById("badge-p2").textContent = abs2.length;
-  const total = abs0.length + abs1.length + abs2.length;
-  const btnSend = document.getElementById("btn-send");
-  btnSend.disabled = total === 0;
-  btnSend.textContent = total > 0
-    ? `📨 Envoyer le récap (${total} absence${total>1?"s":""})`
-    : "📨 Envoyer le récap";
-  renderSection("absence-list",       abs0, true,  "");
-  renderSection("absence-list-prev",  abs1, false, "m1");
-  renderSection("absence-list-prev2", abs2, false, "m2");
-}
-
-// ══════════════════════════════════════════════
-//  APERÇU
-// ══════════════════════════════════════════════
-function buildTable(list) {
-  if (!list.length) return `<p style="color:#9ca3af;font-size:12px">Aucune absence</p>`;
-  return `<table><thead><tr><th>Salarié</th><th>Du</th><th>Au</th><th>Motif</th></tr></thead>
-    <tbody>${list.map(a=>`<tr>
-      <td>${a.salarie}</td>
-      <td style="text-align:center">${fmt(a.du)}</td>
-      <td style="text-align:center">${fmt(a.au)}</td>
-      <td>${a.motif}</td></tr>`).join("")}
-    </tbody></table>`;
-}
-
-function openPreview() {
-  const total = abs0.length+abs1.length+abs2.length;
-  if (!total) { showToast("⚠️ Aucune absence à prévisualiser","error"); return; }
-  const today = new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"long",year:"numeric"});
-  document.getElementById("modal-body").innerHTML = `
-    <div class="pdf-preview">
-      <p class="meta">Généré le ${today} · ${M0.label}:${abs0.length} · ${M1.label}:${abs1.length} · ${M2.label}:${abs2.length}</p>
-      <h3>${M0.label} — ${abs0.length} absence(s)</h3>${buildTable(abs0)}
-      <h3 class="s1">${M1.label} — ${abs1.length} absence(s)</h3>${buildTable(abs1)}
-      <h3 class="s2">${M2.label} — ${abs2.length} absence(s)</h3>${buildTable(abs2)}
-    </div>`;
-  document.getElementById("modal-title").textContent = `${M0.label} / ${M1.label} / ${M2.label}`;
-  document.getElementById("modal-overlay").classList.add("open");
-}
-
-function closeModal(e) {
-  if (e.target === document.getElementById("modal-overlay"))
-    document.getElementById("modal-overlay").classList.remove("open");
-}
-
-// ══════════════════════════════════════════════
-//  ENVOI EMAIL
-// ══════════════════════════════════════════════
-async function sendReport() {
-  const total = abs0.length+abs1.length+abs2.length;
-  if (!total) { showToast("⚠️ Aucune absence à envoyer","error"); return; }
-
-  document.getElementById("btn-send").disabled = true;
-  showLoader("Envoi en cours…");
-
-  const sep   = "─────────────────────────────────────";
-  const ligne = (list, label) => {
-    if (!list.length) return `${label} : aucune absence enregistrée\n`;
-    return `${label} — ${list.length} absence(s) :\n` +
-      list.map(a => `  • ${a.salarie}\n    Du ${fmt(a.du)} au ${fmt(a.au)}  |  ${a.motif}`).join("\n") + "\n";
-  };
-
-  const recap =
-    `${sep}\n` +
-    `${ligne(abs0, M0.label)}\n` +
-    `${sep}\n` +
-    `${ligne(abs1, M1.label)}\n` +
-    `${sep}\n` +
-    `${ligne(abs2, M2.label)}\n` +
-    `${sep}\n\n` +
-    `Total : ${abs0.length} (${M0.label}) + ${abs1.length} (${M1.label}) + ${abs2.length} (${M2.label}) = ${total} absence(s)`;
-
-  const payload = {
-    subject:        `Récap Absences ${M0.label} / ${M1.label} / ${M2.label} — Synergie BTP`,
-    month:          `${M0.label} / ${M1.label} / ${M2.label}`,
-    date_envoi:     new Date().toLocaleDateString("fr-FR"),
-    nb_absences:    `${total} au total (${abs0.length} + ${abs1.length} + ${abs2.length})`,
-    liste_absences: recap,
-  };
-
-  const results = await Promise.allSettled(
-    DEST_EMAILS.map(email =>
-      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID,
-        { ...payload, to_email: email }, EMAILJS_PUBLIC_KEY)
+      <div class="status-tag">✓ envoyé</div>
+    </div>`
     )
-  );
-
-  const ok      = results.filter(r => r.status==="fulfilled").length;
-  const failing = results.filter(r => r.status==="rejected").map(r => r.reason?.text || r.reason?.message || String(r.reason));
-  hideLoader();
-  renderAll(); // réactive le bouton selon le nb d'absences
-
-  if (ok === DEST_EMAILS.length) {
-    showToast(`✅ Récap envoyé aux ${ok} destinataires !`, "success");
-  } else if (ok > 0) {
-    showToast(`⚠️ Envoyé à ${ok}/${DEST_EMAILS.length} seulement`, "info");
-  } else {
-    const detail = failing[0] || "Erreur inconnue";
-    showToast("❌ Email échoué : " + detail, "error");
-    console.error("EmailJS errors:", failing);
-  }
+    .join("");
 }
 
 // ══════════════════════════════════════════════
 //  HELPERS
 // ══════════════════════════════════════════════
-function setSyncStatus(s,msg) {
-  document.getElementById("sync-dot").className = "sync-dot "+s;
-  document.getElementById("sync-label").textContent = msg;
-}
 function showLoader(msg) {
   document.getElementById("loader-msg").textContent = msg;
   document.getElementById("loader").classList.add("open");
 }
-function hideLoader() { document.getElementById("loader").classList.remove("open"); }
-function showToast(msg, type="") {
+function hideLoader() {
+  document.getElementById("loader").classList.remove("open");
+}
+function showToast(msg, type = "") {
   const t = document.getElementById("toast");
-  t.textContent = msg; t.className = "toast show "+type;
+  t.textContent = msg;
+  t.className = "toast show " + type;
   clearTimeout(t._to);
-  t._to = setTimeout(() => t.className="toast", 3500);
+  t._to = setTimeout(() => (t.className = "toast"), 3500);
 }
 
-// ══════════════════════════════════════════════
-//  DÉMARRAGE — charge depuis Google Sheets
-// ══════════════════════════════════════════════
-
-// Initialisation EmailJS (obligatoire en v3)
-emailjs.init(EMAILJS_PUBLIC_KEY);
-
-renderAll(); // affiche état vide pendant le chargement
-
-// pageshow : se déclenche au chargement initial ET quand la page
-// revient du cache navigateur (bfcache) — cas fréquent sur mobile
-window.addEventListener("pageshow", function() {
-  loadAll();
-});
-
-// visibilitychange : rafraîchit le récap quand l'utilisateur
-// revient sur l'onglet après l'avoir mis en arrière-plan
-document.addEventListener("visibilitychange", function() {
-  if (!document.hidden) loadAll();
-});
+renderSessionList();
+loadEmployees();
 </script>
 </body>
 </html>
